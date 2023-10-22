@@ -50,12 +50,12 @@ public class SCLScanner {
 
   // This is where our tokens will be stored.
   // Methods will be provided to access the tokens.
-  private List<String> tokens;
+  private List<Token> tokens;
 
   // Parse the file for all tokens while excluding comments and docstrings.
   public void tokenize(File file) {
     // Create a new ArrayList to hold all of the tokens.
-    tokens = new ArrayList<String>(); // TODO: Make this an arrayList of Tokens later
+    tokens = new ArrayList<Token>();
 
     // Try opening the file using the UTF-8 character set
     try (FileReader fileReader = new FileReader(file, Charset.forName("UTF-8"))) {
@@ -155,14 +155,14 @@ public class SCLScanner {
             // symbols. Strings are checked depending on if they start and end with quotation marks
             // while constants are checked by if they start with a digit. We assume that everything
             // else is an identifier.
-            // TODO: create a token class to use instead of storing strings
-            if (KEYWORDS.contains(token)) tokens.add("KEYWORD: " + token);
-            else if (OPERATORS.contains(token)) tokens.add("OPERATOR: " + token);
-            else if (SPECIAL_SYMBOLS.contains(token)) tokens.add("SPECIAL_SYMBOL: " + token);
+            if (KEYWORDS.contains(token)) tokens.add(new Token("keyword", token));
+            else if (OPERATORS.contains(token)) tokens.add(new Token("operator", token));
+            else if (SPECIAL_SYMBOLS.contains(token))
+              tokens.add(new Token("special_symbol", token));
             else if (token.startsWith("\"") && token.endsWith("\""))
-              tokens.add("LITERAL: " + token);
-            else if (Character.isDigit(token.charAt(0))) tokens.add("CONSTANT: " + token);
-            else tokens.add("IDENTIFIER: " + token);
+              tokens.add(new Token("literal", token));
+            else if (Character.isDigit(token.charAt(0))) tokens.add(new Token("constant", token));
+            else tokens.add(new Token("identifier", token));
             token = "";
           }
 
@@ -190,8 +190,8 @@ public class SCLScanner {
     }
   }
 
-  // Return a list of tokens to the parser.
-  public List<String> getTokens() {
+  // Return a list of tokens to the parser
+  public List<Token> getTokens() {
     return tokens;
   }
 
@@ -206,6 +206,6 @@ public class SCLScanner {
     SCLScanner SCLScanner = new SCLScanner();
     SCLScanner.tokenize(file);
 
-    for (String token : SCLScanner.getTokens()) System.out.println(token);
+    for (Token token : SCLScanner.getTokens()) System.out.println(token.TYPE + ":\t" + token.VALUE);
   }
 }
