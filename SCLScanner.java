@@ -195,6 +195,24 @@ public class SCLScanner {
     return tokens;
   }
 
+  // Build and return the tokens in json format
+  public String toJson() {
+    String json = "{";
+    for (int i = 0; i < tokens.size(); i++) {
+      Token token = tokens.get(i);
+      json +=
+          "\n\t\"Token_"
+              + i
+              + "\": {\n\t\t\"Type\": \""
+              + token.TYPE
+              + "\",\n\t\t\"value\": \""
+              + token.VALUE
+              + "\"\n\t}";
+      if ((i + 1) != tokens.size()) json += ",";
+    }
+    return json += "\n}";
+  }
+
   public static void main(String[] args) {
     if (args.length != 1) {
       System.out.println("Usage: java SCLScanner <filename>");
@@ -207,5 +225,6 @@ public class SCLScanner {
     SCLScanner.tokenize(file);
 
     for (Token token : SCLScanner.getTokens()) System.out.println(token.TYPE + ":\t" + token.VALUE);
+    System.out.println(SCLScanner.toJson());
   }
 }
