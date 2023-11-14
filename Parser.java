@@ -1,276 +1,511 @@
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.ListIterator;
-import java.util.Scanner;
+import java.util.List;
 
-// Scanner had to be remade because we could not get the previous version to work and so both
-// the new scanner and parser are together in 1 file
+// TODO: Do more checks during parsing
+//       Currently, most checks being done are purely for the type of token we expect next rather
+//       than the token's type. This is fine for parsing some tokens but can lead to issues for
+//       operators. Some operators need two operands while others only need one.
 public class Parser {
+  private class KeyValuePair {
+    public final String IDENT;
+    public String VALUE;
 
-  // This is the Scanner Section of the program
-  // The method will take in an empty arraylist of strings and fill it with tokens from the file
-  public static int SCLScanner(ArrayList<String> tokens) throws FileNotFoundException {
-    int lines = 1;
-
-    // This is wehere the user is prompted to enter the file name
-    Scanner userInput = new Scanner(System.in);
-    System.out.println("Enter the file name");
-    String filename = userInput.nextLine();
-    userInput.close();
-    File sourceCodeFile = new File(filename);
-    Scanner fileScan = new Scanner(sourceCodeFile);
-
-    // This loop reads each line of the file using a Scanner object called fileScan.
-    // For each line, it splits the line into an array of strings using the split method with a
-    // space as the delimiter.
-    // It then iterates over the array of strings and adds each non-empty string to an ArrayList
-    // called tokens.
-    // The loop also increments a variable called numberOfLines for each line that is read from the
-    // file. Finally, the loop returns the total number of lines in the file as an integer value.
-    while (fileScan.hasNext()) {
-
-      String thisLine = fileScan.nextLine();
-
-      // creae an array of strings that is split up by every space " "
-      String[] lineArray = thisLine.split(" ");
-
-      // for the length of the current line, we are adding into the parameter tokens, the value of
-      // token from the given file
-      for (int i = 0; i < lineArray.length; i++) {
-
-        // the if statement stops whitespace from being counted as a token
-        if (!lineArray[i].equals("")) {
-
-          // adding into tokens the value of the current token in file
-          tokens.add(lineArray[i]);
-        }
-      }
-      // number of lines is incremented and eventually returned to ensure main method is iterating
-      // through all lines of the file
-      ++lines;
+    public KeyValuePair(String IDENT, String VALUE) {
+      this.IDENT = IDENT;
+      this.VALUE = VALUE;
     }
-    fileScan.close();
-    return lines;
   }
 
-  // This is the first half of the parser, which is the tokenType method.
-  // This method takes in a string and returns the type of token it is
-  // The types we have are identidier, keyword, operator, and constant
-  public static String tokenType(String token) {
+  private List<Token> tokens;
+  private int index = -1;
+  private List<KeyValuePair> identifiers = new ArrayList<>();
 
-    // The method initializes an empty string variable called tok_id. It then creates an ArrayList
-    // of String objects called identifiers that contains a list of valid identifier names in the
-    // SCL language.
-    String tok_id = "";
-    ArrayList<String> identifiers =
-        new ArrayList<String>(
-            Arrays.asList(
-                "vara", "varb", "varc1", "varc2", "varc3", "varc4", "d1", "d2", "a", "b", "c"));
-
-    // The method then creates a ListIterator object called identifiersIterator that iterates over
-    // the identifiers ArrayList.
-    // Giving whatever token it is the identifier token type
-    ListIterator identifiersIterator = identifiers.listIterator();
-    while (identifiersIterator.hasNext()) {
-      if (identifiersIterator.next().equals(token)) {
-        tok_id = "Identfier";
-      }
-    }
-
-    // The method then creates an ArrayList of String objects called keywords that contains a list
-    // of valid keywords in the SCL language.
-    ArrayList<String> keywords =
-        new ArrayList<String>(
-            Arrays.asList(
-                "import",
-                "description",
-                "symbol",
-                "global",
-                "variables",
-                "define",
-                "of",
-                "type",
-                "unsigned",
-                "integer",
-                "short",
-                "long",
-                "implementations",
-                "function",
-                "is",
-                "begin",
-                "set",
-                "display",
-                "exit",
-                "endfun",
-                "declarations",
-                "byte",
-                "main"));
-
-    // The method then creates a ListIterator object called keywordsIterator that iterates over the
-    // keywords ArrayList.
-    // If it finds a token that fits in the keywords arraylist, it will give it the keyword token
-    // type
-    ListIterator<String> keywordsIterator = keywords.listIterator();
-    while (keywordsIterator.hasNext()) {
-      if (keywordsIterator.next().equals(token)) {
-        tok_id = "Keyword";
-      }
-    }
-
-    // The method then creates an ArrayList of String objects called operators that contains a list
-    // of valid operators in the SCL language.
-    ArrayList<String> operators =
-        new ArrayList<String>(
-            Arrays.asList(
-                "+", "-", "*", "/", "=", "%", "<", ">", "<=", ">=", "==", "!=", "(", ")", "++",
-                "--", "!", "&&", "||", "+=", "-=", "*=", "/=", "%="));
-    // The method then creates a ListIterator object called operatorIterator that iterates over the
-    // operators ArrayList.
-    ListIterator<String> operatorIterator = operators.listIterator();
-    while (operatorIterator.hasNext()) {
-      if
-      // Switch case that will give the token the operator of the specific token type
-      (operatorIterator.next().equals(token)) {
-        switch (token) {
-          case "+":
-            tok_id = "Plus operator";
-            break;
-          case "-":
-            tok_id = "Minus operator";
-            break;
-          case "*":
-            tok_id = "Times operator";
-            break;
-          case "/":
-            tok_id = "Divide operator";
-            break;
-          case "%":
-            tok_id = "Modulo operator";
-            break;
-          case "<":
-            tok_id = "Less than operator";
-            break;
-          case ">":
-            tok_id = "Greater than operator";
-            break;
-          case "<=":
-            tok_id = "Less than operator";
-            break;
-          case ">=":
-            tok_id = "Greater than or equal to operator";
-            break;
-          case "=":
-            tok_id = "Assignment operator";
-            break;
-          case "==":
-            tok_id = "Equal operator";
-            break;
-          case "!=":
-            tok_id = "Nnot equal operator";
-            break;
-          case "(":
-            tok_id = "Left parenthesis operator";
-            break;
-          case ")":
-            tok_id = "Right parenthesis operator";
-            break;
-          case "++":
-            tok_id = "increment operator";
-            break;
-          case "--":
-            tok_id = "Decrement operator";
-            break;
-          case "!":
-            tok_id = "Not operator";
-            break;
-          case "&&":
-            tok_id = "And operator";
-            break;
-          case "||":
-            tok_id = "or operator";
-            break;
-
-          default:
-            tok_id = "Unknown operator";
-            break;
-        }
-      }
-    }
-
-    // The method then creates a for loop that iterates over each character in the token string.
-    // If the character is a digit, the method gives the token the constant token type.
-    for (char myChar : token.toCharArray()) {
-      if (Character.isDigit(myChar)) {
-        tok_id = "Constant";
-      }
-    }
-    // returns the token type
-    return tok_id;
+  public Parser(File file) {
+    SCLScanner scanner = new SCLScanner();
+    scanner.tokenize(file);
+    this.tokens = scanner.getTokens();
   }
 
-  // Main method and second half of parser, which is listing the import, description, global
-  // declarations, function, and exit tokens sections
+  public Token getNextToken() {
+    if (index < tokens.size()) return tokens.get(++index);
+    else return null;
+  }
+
+  private Token peekNextToken() {
+    if ((index + 1) < tokens.size()) return tokens.get(index + 1);
+    else return null;
+  }
+
+  public boolean identifierExists(String identifier) {
+    for (KeyValuePair ident : identifiers) if (ident.IDENT.equals(identifier)) return true;
+    return false;
+  }
+
+  // TODO: return an error instead of a boolean value
+  private boolean expect(String expectedTokenType, Token token) {
+    if (expectedTokenType.equals(token.TYPE)) return true;
+    else { // TODO: This else clause should throw an error instead
+      System.err.println(
+          String.format("Parse Error: Expected %s, got %s", expectedTokenType, token.TYPE));
+      return false;
+    }
+  }
+
+  // TODO: return an error instead of a boolean value
+  private boolean expect(String expectedTokenType, String expectedTokenValue, Token token) {
+    if (expectedTokenType.equals(token.TYPE) && expectedTokenValue.equals(token.VALUE)) return true;
+    else { // TODO: this else clause should throw and error instead of false
+      System.err.println(
+          String.format(
+              "Parse Error: Expected %s with a value of %s, got %s with value of %s",
+              expectedTokenType, expectedTokenValue, token.TYPE, token.VALUE));
+      return false;
+    }
+  }
+
+  public void begin() {
+    while (peekNextToken() != null) {
+      start();
+    }
+  }
+
+  private void start() {
+    Token nextToken = getNextToken();
+
+    System.out.println("Next token is: " + nextToken.VALUE);
+
+    switch (nextToken.VALUE) {
+      case "import":
+        imports(nextToken);
+        break;
+      case "symbol":
+        symbols(nextToken);
+        break;
+      case "global":
+        globals(nextToken);
+        break;
+      case "implementations":
+        implementation(nextToken);
+        break;
+      default: // TODO: remove this, this is only here for testing purposes.
+        if (peekNextToken() == null) return;
+        getNextToken();
+        break;
+    }
+  }
+
+  private void imports(Token token) {
+    System.out.println("Entering imports");
+    if (!expect("keyword", "import", token)) System.exit(1);
+
+    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Expecting a literal next");
+    literal(getNextToken());
+  }
+
+  private void literal(Token token) {
+    System.out.println("Entering literal");
+    if (!expect("literal", token)) System.exit(1);
+
+    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Expecting operator, special_symbol, or nothing next");
+
+    Token nextToken = peekNextToken();
+    switch (nextToken.TYPE) {
+      case "operator":
+        operator(getNextToken());
+        break;
+      case "special_symbol":
+        special_symbol(getNextToken());
+        break;
+    }
+  }
+
+  private void symbols(Token token) {
+    System.out.println("Entering symbols");
+    if (!expect("keyword", "symbol", token)) System.exit(1);
+
+    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Expecting an identifier next");
+    identifier(getNextToken());
+  }
+
+  private void identifier(Token token) {
+    System.out.println("Entering identifiers");
+    if (!expect("identifier", token)) System.exit(1);
+    // TODO: Add all identifiers and their values to some sort of datastructure so they can be
+    // recalled later.
+
+    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    // TODO: when called from define(), we aren't expecting anything
+    System.out.println("Expecting a literal, constant, operator, special_symbol, or nothing next");
+
+    // TODO: an end of statement keyword would be useful here.
+    Token nextToken = peekNextToken();
+    switch (nextToken.TYPE) {
+      case "literal":
+        literal(getNextToken());
+        break;
+      case "constant":
+        constant(getNextToken());
+        break;
+      case "operator":
+        operator(getNextToken());
+        break;
+      case "special_symbol":
+        special_symbol(getNextToken());
+        break;
+    }
+  }
+
+  private void constant(Token token) {
+    System.out.println("Entering constants");
+    if (!expect("constant", token)) System.exit(1);
+
+    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Expecting operator, special_symbol, or nothing next");
+
+    Token nextToken = peekNextToken();
+    switch (nextToken.TYPE) {
+      case "operator":
+        operator(getNextToken());
+        break;
+      case "special_symbol":
+        special_symbol(getNextToken());
+        break;
+    }
+  }
+
+  private void operator(Token token) {
+    System.out.println("Entering operator");
+    if (!expect("operator", token)) System.exit(1);
+
+    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println(
+        "Expecting a literal, constant, identifier, operator, or special_symbol next");
+
+    Token nextToken = peekNextToken();
+    switch (nextToken.TYPE) {
+      case "literal":
+        literal(getNextToken());
+        break;
+      case "constant":
+        constant(getNextToken());
+        break;
+      case "identifier":
+        identifier(getNextToken());
+        break;
+      case "operator":
+        operator(getNextToken());
+        break;
+      case "special_symbol":
+        special_symbol(getNextToken());
+        break;
+      default:
+        // TODO: bring this error message inline with the other error messags
+        System.err.println("Unexpected token");
+        System.exit(1);
+        break;
+    }
+  }
+
+  private void special_symbol(Token token) {
+    System.out.println("Entering special_symbol");
+    if (!expect("special_symbol", token)) System.exit(1);
+
+    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Expecting literal, constant, identifier, or nothing next");
+
+    Token nextToken = peekNextToken();
+    switch (nextToken.TYPE) {
+      case "literal":
+        literal(getNextToken());
+        break;
+      case "constant":
+        constant(getNextToken());
+        break;
+      case "identifier":
+        identifier(getNextToken());
+        break;
+    }
+  }
+
+  private void globals(Token token) {
+    System.out.println("Entering globals");
+    if (!expect("keyword", "global", token)) System.exit(1);
+
+    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Expecting declarations next");
+    declarations(getNextToken());
+  }
+
+  private void declarations(Token token) {
+    System.out.println("Entering declarations");
+    if (!expect("keyword", "declarations", token)) System.exit(1);
+
+    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Expecting variables next");
+    variables(getNextToken());
+  }
+
+  private void variables(Token token) {
+    System.out.println("Entering variables");
+    if (!expect("keyword", "variables", token)) System.exit(1);
+
+    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Expecting define next");
+
+    while ((!peekNextToken().TYPE.equals("keyword")
+            || !peekNextToken().VALUE.equals("implementations"))
+        && (!peekNextToken().TYPE.equals("keyword") || !peekNextToken().VALUE.equals("begin")))
+      define(getNextToken());
+  }
+
+  private void define(Token token) {
+    System.out.println("Entering define");
+    if (!expect("keyword", "define", token)) System.exit(1);
+
+    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    // TODO: Consider having identifier, and other functions return their token value
+    System.out.println("Expecting an identifier next");
+    identifier(getNextToken());
+    System.out.println("Back in define");
+
+    System.out.println("Expecting of next");
+    of(getNextToken());
+  }
+
+  private void of(Token token) {
+    System.out.println("Entering of");
+    if (!expect("keyword", "of", token)) System.exit(1);
+
+    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Expecting type next");
+    type(getNextToken());
+  }
+
+  private void type(Token token) {
+    System.out.println("Entering type");
+    if (!expect("keyword", "type", token)) System.exit(1);
+
+    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Expecting either unsigned, integer, short, long, or byte next");
+
+    Token nextToken = peekNextToken();
+    switch (nextToken.VALUE) {
+      case "unsigned":
+        unsigned(getNextToken());
+        break;
+      case "integer":
+        integer(getNextToken());
+        break;
+      case "short":
+        _short(getNextToken());
+        break;
+      case "long":
+        _long(getNextToken());
+        break;
+      case "byte":
+        _byte(getNextToken());
+        break;
+      default:
+        // TODO: bring this error message inline with the other error messags
+        System.err.println("Unexpected token");
+        System.exit(1);
+        break;
+    }
+  }
+
+  private void unsigned(Token token) {
+    System.out.println("Entering unsigned");
+    if (!expect("keyword", "unsigned", token)) System.exit(1);
+
+    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Expecting either integer, short, or long next");
+
+    Token nextToken = peekNextToken();
+    switch (nextToken.VALUE) {
+      case "integer":
+        integer(getNextToken());
+        break;
+      case "short":
+        _short(getNextToken());
+        break;
+      case "long":
+        _long(getNextToken());
+        break;
+      default:
+        // TODO: bring this error message inline with the other error messags
+        System.err.println("Unexpected token");
+        System.exit(1);
+        break;
+    }
+  }
+
+  private void integer(Token token) {
+    System.out.println("Entering integer");
+    if (!expect("keyword", "integer", token)) System.exit(1);
+
+    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+  }
+
+  private void _short(Token token) {
+    System.out.println("Entering short");
+    if (!expect("keyword", "short", token)) System.exit(1);
+
+    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+  }
+
+  private void _long(Token token) {
+    System.out.println("Entering long");
+    if (!expect("keyword", "long", token)) System.exit(1);
+
+    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+  }
+
+  private void _byte(Token token) {
+    System.out.println("Entering byte");
+    if (!expect("keyword", "byte", token)) System.exit(1);
+
+    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+  }
+
+  private void implementation(Token token) {
+    System.out.println("Entering implementations");
+    if (!expect("keyword", "implementations", token)) System.exit(1);
+
+    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Expecting function next");
+    function(getNextToken());
+  }
+
+  private void function(Token token) {
+    System.out.println("Entering function");
+    if (!expect("keyword", "function", token)) System.exit(1);
+
+    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Expecting main next");
+    _main(getNextToken());
+
+    System.out.println("Back in function");
+    System.out.println("Expecting endfun next");
+    endfun(getNextToken());
+  }
+
+  private void _main(Token token) {
+    System.out.println("Entering main");
+    if (!expect("keyword", "main", token)) System.exit(1);
+
+    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Expecting is or nothing next");
+
+    Token nextToken = peekNextToken();
+    if (nextToken == null) return;
+    if (nextToken.TYPE.equals("keyword") && nextToken.VALUE.equals("is")) is(getNextToken());
+  }
+
+  private void is(Token token) {
+    System.out.println("Entering is");
+    if (!expect("keyword", "is", token)) System.exit(1);
+
+    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Expecting variables next");
+    variables(getNextToken());
+
+    System.out.println("Back in is");
+    System.out.println("Expecting begin next");
+    _begin(getNextToken());
+  }
+
+  private void _begin(Token token) {
+    System.out.println("Entering begin");
+    if (!expect("keyword", "begin", token)) System.exit(1);
+
+    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Expecting either set, display, or exit next");
+
+    while (!peekNextToken().TYPE.equals("keyword") || !peekNextToken().VALUE.equals("endfun")) {
+      Token nextToken = peekNextToken();
+      switch (nextToken.VALUE) {
+        case "set":
+          set(getNextToken());
+          break;
+        case "display":
+          display(getNextToken());
+          break;
+        case "exit":
+          exit(getNextToken());
+          break;
+        default:
+          // TODO: bring this error message inline with the other error messags
+          System.err.println("Unexpected token");
+          System.err.println(getNextToken().VALUE);
+          System.exit(1);
+          break;
+      }
+    }
+  }
+
+  private void set(Token token) {
+    System.out.println("Entering set");
+    if (!expect("keyword", "set", token)) System.exit(1);
+
+    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Expecting an identifier next");
+    identifier(getNextToken());
+  }
+
+  private void display(Token token) {
+    System.out.println("Entering display");
+    if (!expect("keyword", "display", token)) System.exit(1);
+
+    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Expecting an identifier or literal next");
+
+    Token nextToken = peekNextToken();
+    switch (nextToken.TYPE) {
+      case "identifier":
+        identifier(getNextToken());
+        break;
+      case "literal":
+        literal(getNextToken());
+        break;
+      default:
+        // TODO: bring this error message inline with the other error messags
+        System.err.println("Unexpected token");
+        System.exit(1);
+        break;
+    }
+  }
+
+  private void exit(Token token) {
+    System.out.println("Entering exit");
+    if (!expect("keyword", "exit", token)) System.exit(1);
+
+    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+  }
+
+  private void endfun(Token token) {
+    System.out.println("Entering endfun");
+    if (!expect("keyword", "endfun", token)) System.exit(1);
+
+    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Expecting main next");
+    _main(getNextToken());
+  }
+
   public static void main(String[] args) throws FileNotFoundException {
-    // The array list where all of our generated token will be stored
-    ArrayList<String> tokens = new ArrayList<String>();
-
-    // Passes the empty tokens arraylist through the SCLScanner method
-    SCLScanner(tokens);
-
-    // Once all the inputs have been tokenized and stored in the tokens arraylist, the main method
-    // iterates over the tokens arraylist and prints what Statement parses what tokens
-    for (int i = 0; i < tokens.size(); i++) {
-      // This is for all the import statement tokens
-      if (i == 0) {
-        System.out.println("Import Token Found: Parsing Import Statement...");
-        System.out.print("Token," + " " + (i + 1) + ": ");
-        System.out.print(tokens.get(i + 1));
-        System.out.println("\t" + tokenType((String) tokens.get(i + 1)) + "");
-      }
-      // This is for all the description statement tokens
-      else if (i == 2) {
-        System.out.println("Description Token Found: Parsing Description...");
-        for (int j = 3; j < 9; j++) {
-          System.out.print("Token," + " " + (j) + ": ");
-          System.out.print(tokens.get(j));
-          System.out.println("\t" + tokenType((String) tokens.get(j)) + "");
-        }
-      }
-      // This is for all the global declarations statement tokens
-      else if (i == 9) {
-        System.out.println("Global Declarations tokens found: Parsing Global Declarations...");
-        for (int j = 10; j < 32; j++) {
-          System.out.print("Token," + " " + (j) + ": ");
-          System.out.print(tokens.get(j));
-          System.out.println("\t" + tokenType((String) tokens.get(j)) + "");
-        }
-      }
-      // This is for all the function variable statement tokens
-      else if (i == 33) {
-        System.out.println("Function variable tokens found: Parsing Function...");
-        for (int j = 37; j < 77; j++) {
-          System.out.print("Token," + " " + (j) + ": ");
-          System.out.print(tokens.get(j));
-          System.out.println("\t" + tokenType((String) tokens.get(j)) + "");
-        }
-      }
-      // This is for all the function begin statement tokens
-      else if (i == 77) {
-        System.out.println("Function begin token found: Parsing Function...");
-        for (int j = 78; j < 208; j++) {
-          System.out.print("Token," + " " + (j) + ": ");
-          System.out.print(tokens.get(j));
-          System.out.println("\t" + tokenType((String) tokens.get(j)) + "");
-        }
-      }
-
-      // Once the exit token is found, the parsing will end
-      else if (i == 209) {
-        System.out.println("Exit token found: Ending parsing...");
-      }
-      System.out.print("");
+    if (args.length != 1) {
+      System.out.println("Usage: java SCLScanner <filename>");
+      return;
     }
+
+    String filename = args[0];
+    File file = new File(filename);
+
+    Parser parser = new Parser(file);
+    parser.begin();
   }
 }
