@@ -9,6 +9,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+// TODO: Add end of statement keyword
+// Each statement should be a single line, so the newline character should be the end of statement
+// keyword. End of statement will help us catch errors as well as know when we have the entire
+// statement to execute
 public class SCLScanner {
   // hardcode keywords
   private static final Set<String> KEYWORDS =
