@@ -89,9 +89,10 @@ public class Parser {
       case "implementations":
         implementation(nextToken);
         break;
-      default: // TODO: remove this, this is only here for testing purposes.
-        if (peekNextToken() == null) return;
-        getNextToken();
+      default:
+        // TODO: bring this error message inline with the other error messags
+        System.err.println("Unexpected token");
+        System.exit(1);
         break;
     }
   }
