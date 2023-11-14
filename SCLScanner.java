@@ -38,19 +38,14 @@ public class SCLScanner {
               "exit",
               "endfun",
               "declarations",
-              "byte",
-              "main"));
+              "byte"));
 
   // hardcode operators
   private static final Set<String> OPERATORS =
-      new HashSet<>(
-          Arrays.asList(
-              "+", "-", "*", "/", "%", "=", "<", ">", "band", "bor", "bxor", "negate", "lshift",
-              "rshift"));
+      new HashSet<>(Arrays.asList("=", "band", "bor", "bxor", "negate", "lshift", "rshift"));
 
   // hardcode special symbols
-  private static final Set<String> SPECIAL_SYMBOLS =
-      new HashSet<>(Arrays.asList("~", "!", "?", ":", ",", ";", "(", ")", "{", "}", "[", "]"));
+  private static final Set<String> SPECIAL_SYMBOLS = new HashSet<>(Arrays.asList(",", "(", ")"));
 
   // This is where our tokens will be stored.
   // Methods will be provided to access the tokens.

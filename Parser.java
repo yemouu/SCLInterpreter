@@ -7,6 +7,8 @@ import java.util.List;
 //       Currently, most checks being done are purely for the type of token we expect next rather
 //       than the token's type. This is fine for parsing some tokens but can lead to issues for
 //       operators. Some operators need two operands while others only need one.
+// TODO: We are failing to check for null in multiple areas of the code
+//       We should throw errors instead of null
 public class Parser {
   private class KeyValuePair {
     public final String IDENT;
@@ -145,6 +147,7 @@ public class Parser {
 
     // TODO: an end of statement keyword would be useful here.
     Token nextToken = peekNextToken();
+    if (nextToken == null) return;
     switch (nextToken.TYPE) {
       case "literal":
         literal(getNextToken());
@@ -387,24 +390,16 @@ public class Parser {
     if (!expect("keyword", "function", token)) System.exit(1);
 
     System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
-    System.out.println("Expecting main next");
-    _main(getNextToken());
+    System.out.println("Expecting identifer next");
+    identifier(getNextToken());
+
+    System.out.println("Back in function");
+    System.out.println("Expecting is next");
+    is(getNextToken());
 
     System.out.println("Back in function");
     System.out.println("Expecting endfun next");
     endfun(getNextToken());
-  }
-
-  private void _main(Token token) {
-    System.out.println("Entering main");
-    if (!expect("keyword", "main", token)) System.exit(1);
-
-    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
-    System.out.println("Expecting is or nothing next");
-
-    Token nextToken = peekNextToken();
-    if (nextToken == null) return;
-    if (nextToken.TYPE.equals("keyword") && nextToken.VALUE.equals("is")) is(getNextToken());
   }
 
   private void is(Token token) {
@@ -493,8 +488,8 @@ public class Parser {
     if (!expect("keyword", "endfun", token)) System.exit(1);
 
     System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
-    System.out.println("Expecting main next");
-    _main(getNextToken());
+    System.out.println("Expecting identifier next");
+    identifier(getNextToken());
   }
 
   public static void main(String[] args) throws FileNotFoundException {
