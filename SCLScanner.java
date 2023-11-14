@@ -195,6 +195,18 @@ public class SCLScanner {
     return tokens;
   }
 
+  // Helper to escape string literals in json
+  private String jsonStringLiteralHelper(String str) {
+    StringBuilder sb = new StringBuilder(str);
+
+    // The order here doesn't really matter, but inerting to the start of the string first
+    // will change the length which makes inserting to the end a bit awkward.
+    sb.insert(str.length() - 1, "\\");
+    sb.insert(0, "\\");
+
+    return sb.toString();
+  }
+
   // Build and return the tokens in json format
   public String toJson() {
     String json = "{";
@@ -206,7 +218,7 @@ public class SCLScanner {
               + "\": {\n\t\t\"Type\": \""
               + token.TYPE
               + "\",\n\t\t\"value\": \""
-              + token.VALUE
+              + (!token.TYPE.equals("literal") ? token.VALUE : jsonStringLiteralHelper(token.VALUE))
               + "\"\n\t}";
       if ((i + 1) != tokens.size()) json += ",";
     }
