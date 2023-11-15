@@ -66,27 +66,21 @@ public class Parser {
     return (expectedTokenType == token.TYPE) && expectedTokenValue.equals(token.VALUE);
   }
 
-  private void expectOrError(TokenType expectedTokenType, Token token)
-      throws UnexpectedTokenException {
-    if (!expect(expectedTokenType, token))
-      System.err.println(
+  private void expectOrError(TokenType expectedType, Token token) throws UnexpectedTokenException {
+    if (!expect(expectedType, token))
+      throw new UnexpectedTokenException(
           String.format(
-              "Expected token with type %s, got token with type %s",
-              expectedTokenType, token.TYPE));
+              "Expected token with type %s, got token with type %s and value %s",
+              expectedType, token.TYPE, token.VALUE));
   }
 
-  private void expectOrError(TokenType expectedTokenType, String expectedTokenValue, Token token)
+  private void expectOrError(TokenType expectedType, String expectedValue, Token token)
       throws UnexpectedTokenException {
-    if (!expect(expectedTokenType, expectedTokenValue, token))
+    if (!expect(expectedType, expectedValue, token))
       throw new UnexpectedTokenException(
           String.format(
               "Expected token with type %s and value %s, got a token with type %s and value %s",
-              expectedTokenType, expectedTokenValue, token.TYPE, token.VALUE));
-  }
-
-  private void log(String formatString, Object... args) {
-    if (!verbose) return;
-    System.err.println(String.format(formatString, args));
+              expectedType, expectedValue, token.TYPE, token.VALUE));
   }
 
   private void log(String message) {
