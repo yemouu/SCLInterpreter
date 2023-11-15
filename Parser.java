@@ -306,6 +306,7 @@ public class Parser {
         && !expect(TokenType.KEYWORD, "implementations", nextToken)
         && !expect(TokenType.KEYWORD, "begin", nextToken)) {
       define(getNextToken());
+      nextToken = peekNextToken();
     }
   }
 
