@@ -10,7 +10,6 @@ import java.util.List;
 // TODO: We are failing to check for null in multiple areas of the code
 //       We should throw errors instead of null
 // TODO: Create a list of statements that we can pass to the interpreter to get output of each file
-// TODO: Make all the print statements optional
 // TODO: Consider having identifier, and other functions return their token value
 public class Parser {
   private class KeyValuePair {
@@ -87,6 +86,16 @@ public class Parser {
               expectedTokenType, expectedTokenValue, token.TYPE, token.VALUE));
   }
 
+  private void log(String formatString, Object... args) {
+    if (!verbose) return;
+    System.err.println(String.format(formatString, args));
+  }
+
+  private void log(String message) {
+    if (!verbose) return;
+    System.err.println(message);
+  }
+
   public void begin() {
     while (peekNextToken() != null) {
       start();
@@ -96,7 +105,7 @@ public class Parser {
   private void start() {
     Token nextToken = getNextToken();
 
-    System.out.println("Next token is of type " + nextToken.TYPE + " and value " + nextToken.VALUE);
+    log("Next token is of type " + nextToken.TYPE + " and value " + nextToken.VALUE);
     expectOrError(TokenType.KEYWORD, nextToken);
 
     switch (nextToken.VALUE) {
@@ -122,11 +131,11 @@ public class Parser {
   private void imports(Token token) {
     if (token == null) return;
 
-    System.out.println("Entering imports");
+    log("Entering imports");
     expectOrError(TokenType.KEYWORD, "import", token);
 
-    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
-    System.out.println("Expecting a literal next");
+    log(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
+    log("Expecting a literal next");
     // TODO: Missing null checks
     literal(getNextToken());
   }
@@ -134,11 +143,11 @@ public class Parser {
   private void literal(Token token) {
     if (token == null) return;
 
-    System.out.println("Entering literal");
+    log("Entering literal");
     expectOrError(TokenType.LITERAL, token);
 
-    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
-    System.out.println("Expecting operator, special_symbol, or nothing next");
+    log(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
+    log("Expecting operator, special_symbol, or nothing next");
 
     Token nextToken = peekNextToken();
     if (nextToken == null) return;
@@ -158,11 +167,11 @@ public class Parser {
   private void symbols(Token token) {
     if (token == null) return;
 
-    System.out.println("Entering symbols");
+    log("Entering symbols");
     expectOrError(TokenType.KEYWORD, "symbol", token);
 
-    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
-    System.out.println("Expecting an identifier next");
+    log(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
+    log("Expecting an identifier next");
     // TODO: Missing null checks
     identifier(getNextToken());
   }
@@ -170,13 +179,13 @@ public class Parser {
   private void identifier(Token token) {
     if (token == null) return;
 
-    System.out.println("Entering identifiers");
+    log("Entering identifiers");
     expectOrError(TokenType.IDENTIFIER, token);
 
-    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
+    log(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
     // TODO: Add all identifiers and their values to some sort of datastructure so they can be
     // recalled later.
-    System.out.println("Expecting a literal, constant, operator, special_symbol, or nothing next");
+    log("Expecting a literal, constant, operator, special_symbol, or nothing next");
 
     Token nextToken = peekNextToken();
     if (nextToken == null) return;
@@ -202,11 +211,11 @@ public class Parser {
   private void constant(Token token) {
     if (token == null) return;
 
-    System.out.println("Entering constants");
+    log("Entering constants");
     expectOrError(TokenType.CONSTANT, token);
 
-    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
-    System.out.println("Expecting operator, special_symbol, or nothing next");
+    log(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
+    log("Expecting operator, special_symbol, or nothing next");
 
     Token nextToken = peekNextToken();
     if (nextToken == null) return;
@@ -228,11 +237,11 @@ public class Parser {
   private void operator(Token token) {
     if (token == null) return;
 
-    System.out.println("Entering operator");
+    log("Entering operator");
     expectOrError(TokenType.OPERATOR, token);
 
-    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
-    System.out.println(
+    log(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
+    log(
         "Expecting a literal, constant, identifier, operator, or special_symbol next");
 
     Token nextToken = peekNextToken();
@@ -264,11 +273,11 @@ public class Parser {
   private void special_symbol(Token token) {
     if (token == null) return;
 
-    System.out.println("Entering special_symbol");
+    log("Entering special_symbol");
     expectOrError(TokenType.SPECIAL_SYMBOL, token);
 
-    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
-    System.out.println("Expecting literal, constant, identifier, or nothing next");
+    log(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
+    log("Expecting literal, constant, identifier, or nothing next");
 
     Token nextToken = peekNextToken();
     if (nextToken == null) return;
@@ -291,11 +300,11 @@ public class Parser {
   private void globals(Token token) {
     if (token == null) return;
 
-    System.out.println("Entering globals");
+    log("Entering globals");
     expectOrError(TokenType.KEYWORD, "global", token);
 
-    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
-    System.out.println("Expecting declarations next");
+    log(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
+    log("Expecting declarations next");
     // TODO: Missing null checks
     declarations(getNextToken());
   }
@@ -303,11 +312,11 @@ public class Parser {
   private void declarations(Token token) {
     if (token == null) return;
 
-    System.out.println("Entering declarations");
+    log("Entering declarations");
     expectOrError(TokenType.KEYWORD, "declarations", token);
 
-    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
-    System.out.println("Expecting variables next");
+    log(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
+    log("Expecting variables next");
     // TODO: Missing null checks
     variables(getNextToken());
   }
@@ -315,11 +324,11 @@ public class Parser {
   private void variables(Token token) {
     if (token == null) return;
 
-    System.out.println("Entering variables");
+    log("Entering variables");
     expectOrError(TokenType.KEYWORD, "variables", token);
 
-    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
-    System.out.println("Expecting define next");
+    log(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
+    log("Expecting define next");
 
     // TODO: Missing null checks
     while (!expect(TokenType.KEYWORD, "implementations", peekNextToken())
@@ -329,17 +338,17 @@ public class Parser {
   private void define(Token token) {
     if (token == null) return;
 
-    System.out.println("Entering define");
+    log("Entering define");
     expectOrError(TokenType.KEYWORD, "define", token);
 
-    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
+    log(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
 
-    System.out.println("Expecting an identifier next");
+    log("Expecting an identifier next");
     // TODO: Missing null checks
     identifier(getNextToken());
-    System.out.println("Back in define");
+    log("Back in define");
 
-    System.out.println("Expecting of next");
+    log("Expecting of next");
     // TODO: Missing null checks
     of(getNextToken());
   }
@@ -347,11 +356,11 @@ public class Parser {
   private void of(Token token) {
     if (token == null) return;
 
-    System.out.println("Entering of");
+    log("Entering of");
     expectOrError(TokenType.KEYWORD, "of", token);
 
-    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
-    System.out.println("Expecting type next");
+    log(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
+    log("Expecting type next");
     // TODO: Missing null checks
     type(getNextToken());
   }
@@ -359,11 +368,11 @@ public class Parser {
   private void type(Token token) {
     if (token == null) return;
 
-    System.out.println("Entering type");
+    log("Entering type");
     expectOrError(TokenType.KEYWORD, "type", token);
 
-    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
-    System.out.println("Expecting either unsigned, integer, short, long, or byte next");
+    log(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
+    log("Expecting either unsigned, integer, short, long, or byte next");
 
     // TODO: Missing null checks
     Token nextToken = peekNextToken();
@@ -393,11 +402,11 @@ public class Parser {
   private void unsigned(Token token) {
     if (token == null) return;
 
-    System.out.println("Entering unsigned");
+    log("Entering unsigned");
     expectOrError(TokenType.KEYWORD, "unsigned", token);
 
-    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
-    System.out.println("Expecting either integer, short, or long next");
+    log(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
+    log("Expecting either integer, short, or long next");
 
     // TODO: Missing null checks
     Token nextToken = peekNextToken();
@@ -421,47 +430,47 @@ public class Parser {
   private void integer(Token token) {
     if (token == null) return;
 
-    System.out.println("Entering integer");
+    log("Entering integer");
     expectOrError(TokenType.KEYWORD, "integer", token);
 
-    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
+    log(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
   }
 
   private void _short(Token token) {
     if (token == null) return;
 
-    System.out.println("Entering short");
+    log("Entering short");
     expectOrError(TokenType.KEYWORD, "short", token);
 
-    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
+    log(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
   }
 
   private void _long(Token token) {
     if (token == null) return;
 
-    System.out.println("Entering long");
+    log("Entering long");
     expectOrError(TokenType.KEYWORD, "long", token);
 
-    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
+    log(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
   }
 
   private void _byte(Token token) {
     if (token == null) return;
 
-    System.out.println("Entering byte");
+    log("Entering byte");
     expectOrError(TokenType.KEYWORD, "byte", token);
 
-    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
+    log(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
   }
 
   private void implementation(Token token) {
     if (token == null) return;
 
-    System.out.println("Entering implementations");
+    log("Entering implementations");
     expectOrError(TokenType.KEYWORD, "implementations", token);
 
-    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
-    System.out.println("Expecting function next");
+    log(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
+    log("Expecting function next");
     // TODO: Missing null checks
     function(getNextToken());
   }
@@ -469,21 +478,21 @@ public class Parser {
   private void function(Token token) {
     if (token == null) return;
 
-    System.out.println("Entering function");
+    log("Entering function");
     expectOrError(TokenType.KEYWORD, "function", token);
 
-    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
-    System.out.println("Expecting identifer next");
+    log(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
+    log("Expecting identifer next");
     // TODO: Missing null checks
     identifier(getNextToken());
 
-    System.out.println("Back in function");
-    System.out.println("Expecting is next");
+    log("Back in function");
+    log("Expecting is next");
     // TODO: Missing null checks
     is(getNextToken());
 
-    System.out.println("Back in function");
-    System.out.println("Expecting endfun next");
+    log("Back in function");
+    log("Expecting endfun next");
     // TODO: Missing null checks
     endfun(getNextToken());
   }
@@ -491,16 +500,16 @@ public class Parser {
   private void is(Token token) {
     if (token == null) return;
 
-    System.out.println("Entering is");
+    log("Entering is");
     expectOrError(TokenType.KEYWORD, "is", token);
 
-    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
-    System.out.println("Expecting variables next");
+    log(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
+    log("Expecting variables next");
     // TODO: Missing null checks
     variables(getNextToken());
 
-    System.out.println("Back in is");
-    System.out.println("Expecting begin next");
+    log("Back in is");
+    log("Expecting begin next");
     // TODO: Missing null checks
     _begin(getNextToken());
   }
@@ -508,11 +517,11 @@ public class Parser {
   private void _begin(Token token) {
     if (token == null) return;
 
-    System.out.println("Entering begin");
+    log("Entering begin");
     expectOrError(TokenType.KEYWORD, "begin", token);
 
-    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
-    System.out.println("Expecting either set, display, or exit next");
+    log(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
+    log("Expecting either set, display, or exit next");
 
     // TODO: Missing null checks
     while (!expect(TokenType.KEYWORD, "endfun", peekNextToken())) {
@@ -528,9 +537,9 @@ public class Parser {
           exit(getNextToken());
           break;
         default:
-        throw new UnexpectedTokenException(
-            String.format(
-                "Unexpected token with type %s and value %s", nextToken.TYPE, nextToken.VALUE));
+          throw new UnexpectedTokenException(
+              String.format(
+                  "Unexpected token with type %s and value %s", nextToken.TYPE, nextToken.VALUE));
       }
     }
   }
@@ -538,11 +547,11 @@ public class Parser {
   private void set(Token token) {
     if (token == null) return;
 
-    System.out.println("Entering set");
+    log("Entering set");
     expectOrError(TokenType.KEYWORD, "set", token);
 
-    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
-    System.out.println("Expecting an identifier next");
+    log(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
+    log("Expecting an identifier next");
     // TODO: Missing null checks
     identifier(getNextToken());
   }
@@ -550,11 +559,11 @@ public class Parser {
   private void display(Token token) {
     if (token == null) return;
 
-    System.out.println("Entering display");
+    log("Entering display");
     expectOrError(TokenType.KEYWORD, "display", token);
 
-    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
-    System.out.println("Expecting an identifier or literal next");
+    log(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
+    log("Expecting an identifier or literal next");
 
     Token nextToken = peekNextToken();
     if (nextToken == null) throw new TokenNotFoundException();
@@ -576,34 +585,34 @@ public class Parser {
   private void exit(Token token) {
     if (token == null) return;
 
-    System.out.println("Entering exit");
+    log("Entering exit");
     expectOrError(TokenType.KEYWORD, "exit", token);
 
-    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
+    log(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
   }
 
   private void endfun(Token token) {
     if (token == null) return;
 
-    System.out.println("Entering endfun");
+    log("Entering endfun");
     expectOrError(TokenType.KEYWORD, "endfun", token);
 
-    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
-    System.out.println("Expecting identifier next");
+    log(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
+    log("Expecting identifier next");
     // TODO: Missing null checks
     identifier(getNextToken());
   }
 
   public static void main(String[] args) throws FileNotFoundException {
     if (args.length != 1) {
-      System.out.println("Usage: java SCLScanner <filename>");
+      System.err.println("Usage: java SCLScanner <filename>");
       return;
     }
 
     String filename = args[0];
     File file = new File(filename);
 
-    Parser parser = new Parser(file);
+    Parser parser = new Parser(file, true);
     parser.begin();
   }
 }
