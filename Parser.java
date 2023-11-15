@@ -9,6 +9,9 @@ import java.util.List;
 //       operators. Some operators need two operands while others only need one.
 // TODO: We are failing to check for null in multiple areas of the code
 //       We should throw errors instead of null
+// TODO: Create a list of statements that we can pass to the interpreter to get output of each file
+// TODO: Make all the print statements optional
+// TODO: Consider having identifier, and other functions return their token value
 public class Parser {
   private class KeyValuePair {
     public final String IDENT;
@@ -24,14 +27,27 @@ public class Parser {
   private int index = -1;
   private List<KeyValuePair> identifiers = new ArrayList<>();
 
+  private String tokenFoundFormatString = "Found a token with type %s and value %s";
+  private boolean verbose = false;
+
   public Parser(File file) {
     SCLScanner scanner = new SCLScanner();
     scanner.tokenize(file);
     this.tokens = scanner.getTokens();
   }
 
+  public Parser(File file, boolean verbose) {
+    this(file);
+    this.verbose = verbose;
+  }
+
   public Token getNextToken() {
     if (index < tokens.size()) return tokens.get(++index);
+    else return null;
+  }
+
+  private Token peekPrevToken() {
+    if ((index - 1) >= 0) return tokens.get(index - 1);
     else return null;
   }
 
@@ -45,26 +61,30 @@ public class Parser {
     return false;
   }
 
-  // TODO: return an error instead of a boolean value
-  private boolean expect(String expectedTokenType, Token token) {
-    if (expectedTokenType.equals(token.TYPE)) return true;
-    else { // TODO: This else clause should throw an error instead
-      System.err.println(
-          String.format("Parse Error: Expected %s, got %s", expectedTokenType, token.TYPE));
-      return false;
-    }
+  private boolean expect(TokenType expectedTokenType, Token token) {
+    return expectedTokenType == token.TYPE;
   }
 
-  // TODO: return an error instead of a boolean value
-  private boolean expect(String expectedTokenType, String expectedTokenValue, Token token) {
-    if (expectedTokenType.equals(token.TYPE) && expectedTokenValue.equals(token.VALUE)) return true;
-    else { // TODO: this else clause should throw and error instead of false
+  private boolean expect(TokenType expectedTokenType, String expectedTokenValue, Token token) {
+    return (expectedTokenType == token.TYPE) && expectedTokenValue.equals(token.VALUE);
+  }
+
+  private void expectOrError(TokenType expectedTokenType, Token token)
+      throws UnexpectedTokenException {
+    if (!expect(expectedTokenType, token))
       System.err.println(
           String.format(
-              "Parse Error: Expected %s with a value of %s, got %s with value of %s",
+              "Expected token with type %s, got token with type %s",
+              expectedTokenType, token.TYPE));
+  }
+
+  private void expectOrError(TokenType expectedTokenType, String expectedTokenValue, Token token)
+      throws UnexpectedTokenException {
+    if (!expect(expectedTokenType, expectedTokenValue, token))
+      throw new UnexpectedTokenException(
+          String.format(
+              "Expected token with type %s and value %s, got a token with type %s and value %s",
               expectedTokenType, expectedTokenValue, token.TYPE, token.VALUE));
-      return false;
-    }
   }
 
   public void begin() {
@@ -76,7 +96,8 @@ public class Parser {
   private void start() {
     Token nextToken = getNextToken();
 
-    System.out.println("Next token is: " + nextToken.VALUE);
+    System.out.println("Next token is of type " + nextToken.TYPE + " and value " + nextToken.VALUE);
+    expectOrError(TokenType.KEYWORD, nextToken);
 
     switch (nextToken.VALUE) {
       case "import":
@@ -92,211 +113,259 @@ public class Parser {
         implementation(nextToken);
         break;
       default:
-        // TODO: bring this error message inline with the other error messags
-        System.err.println("Unexpected token");
-        System.exit(1);
-        break;
+        throw new UnexpectedTokenException(
+            String.format(
+                "Unexpected token with type %s and value %s", nextToken.TYPE, nextToken.VALUE));
     }
   }
 
   private void imports(Token token) {
-    System.out.println("Entering imports");
-    if (!expect("keyword", "import", token)) System.exit(1);
+    if (token == null) return;
 
-    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Entering imports");
+    expectOrError(TokenType.KEYWORD, "import", token);
+
+    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
     System.out.println("Expecting a literal next");
+    // TODO: Missing null checks
     literal(getNextToken());
   }
 
   private void literal(Token token) {
-    System.out.println("Entering literal");
-    if (!expect("literal", token)) System.exit(1);
+    if (token == null) return;
 
-    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Entering literal");
+    expectOrError(TokenType.LITERAL, token);
+
+    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
     System.out.println("Expecting operator, special_symbol, or nothing next");
 
     Token nextToken = peekNextToken();
+    if (nextToken == null) return;
+
     switch (nextToken.TYPE) {
-      case "operator":
+      case OPERATOR:
         operator(getNextToken());
         break;
-      case "special_symbol":
+      case SPECIAL_SYMBOL:
         special_symbol(getNextToken());
+        break;
+      default:
         break;
     }
   }
 
   private void symbols(Token token) {
-    System.out.println("Entering symbols");
-    if (!expect("keyword", "symbol", token)) System.exit(1);
+    if (token == null) return;
 
-    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Entering symbols");
+    expectOrError(TokenType.KEYWORD, "symbol", token);
+
+    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
     System.out.println("Expecting an identifier next");
+    // TODO: Missing null checks
     identifier(getNextToken());
   }
 
   private void identifier(Token token) {
+    if (token == null) return;
+
     System.out.println("Entering identifiers");
-    if (!expect("identifier", token)) System.exit(1);
+    expectOrError(TokenType.IDENTIFIER, token);
+
+    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
     // TODO: Add all identifiers and their values to some sort of datastructure so they can be
     // recalled later.
-
-    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
-    // TODO: when called from define(), we aren't expecting anything
     System.out.println("Expecting a literal, constant, operator, special_symbol, or nothing next");
 
-    // TODO: an end of statement keyword would be useful here.
     Token nextToken = peekNextToken();
     if (nextToken == null) return;
+
     switch (nextToken.TYPE) {
-      case "literal":
+      case LITERAL:
         literal(getNextToken());
         break;
-      case "constant":
+      case CONSTANT:
         constant(getNextToken());
         break;
-      case "operator":
+      case OPERATOR:
         operator(getNextToken());
         break;
-      case "special_symbol":
+      case SPECIAL_SYMBOL:
         special_symbol(getNextToken());
+        break;
+      default:
         break;
     }
   }
 
   private void constant(Token token) {
-    System.out.println("Entering constants");
-    if (!expect("constant", token)) System.exit(1);
+    if (token == null) return;
 
-    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Entering constants");
+    expectOrError(TokenType.CONSTANT, token);
+
+    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
     System.out.println("Expecting operator, special_symbol, or nothing next");
 
     Token nextToken = peekNextToken();
+    if (nextToken == null) return;
+
     switch (nextToken.TYPE) {
-      case "operator":
+      case OPERATOR:
         operator(getNextToken());
         break;
-      case "special_symbol":
+      case SPECIAL_SYMBOL:
         special_symbol(getNextToken());
+        break;
+      default:
         break;
     }
   }
 
+  // TODO: Validate that each operator has the opperands that it needs.
+  //       The helper fuction peekPrevToken() should help here.
   private void operator(Token token) {
-    System.out.println("Entering operator");
-    if (!expect("operator", token)) System.exit(1);
+    if (token == null) return;
 
-    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Entering operator");
+    expectOrError(TokenType.OPERATOR, token);
+
+    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
     System.out.println(
         "Expecting a literal, constant, identifier, operator, or special_symbol next");
 
     Token nextToken = peekNextToken();
+    if (nextToken == null) throw new TokenNotFoundException();
+
     switch (nextToken.TYPE) {
-      case "literal":
+      case LITERAL:
         literal(getNextToken());
         break;
-      case "constant":
+      case CONSTANT:
         constant(getNextToken());
         break;
-      case "identifier":
+      case IDENTIFIER:
         identifier(getNextToken());
         break;
-      case "operator":
+      case OPERATOR:
         operator(getNextToken());
         break;
-      case "special_symbol":
+      case SPECIAL_SYMBOL:
         special_symbol(getNextToken());
         break;
       default:
-        // TODO: bring this error message inline with the other error messags
-        System.err.println("Unexpected token");
-        System.exit(1);
-        break;
+        throw new UnexpectedTokenException(
+            String.format(
+                "Unexpected token with type %s and value %s", nextToken.TYPE, nextToken.VALUE));
     }
   }
 
   private void special_symbol(Token token) {
-    System.out.println("Entering special_symbol");
-    if (!expect("special_symbol", token)) System.exit(1);
+    if (token == null) return;
 
-    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Entering special_symbol");
+    expectOrError(TokenType.SPECIAL_SYMBOL, token);
+
+    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
     System.out.println("Expecting literal, constant, identifier, or nothing next");
 
     Token nextToken = peekNextToken();
+    if (nextToken == null) return;
+
     switch (nextToken.TYPE) {
-      case "literal":
+      case LITERAL:
         literal(getNextToken());
         break;
-      case "constant":
+      case CONSTANT:
         constant(getNextToken());
         break;
-      case "identifier":
+      case IDENTIFIER:
         identifier(getNextToken());
+        break;
+      default:
         break;
     }
   }
 
   private void globals(Token token) {
-    System.out.println("Entering globals");
-    if (!expect("keyword", "global", token)) System.exit(1);
+    if (token == null) return;
 
-    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Entering globals");
+    expectOrError(TokenType.KEYWORD, "global", token);
+
+    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
     System.out.println("Expecting declarations next");
+    // TODO: Missing null checks
     declarations(getNextToken());
   }
 
   private void declarations(Token token) {
-    System.out.println("Entering declarations");
-    if (!expect("keyword", "declarations", token)) System.exit(1);
+    if (token == null) return;
 
-    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Entering declarations");
+    expectOrError(TokenType.KEYWORD, "declarations", token);
+
+    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
     System.out.println("Expecting variables next");
+    // TODO: Missing null checks
     variables(getNextToken());
   }
 
   private void variables(Token token) {
-    System.out.println("Entering variables");
-    if (!expect("keyword", "variables", token)) System.exit(1);
+    if (token == null) return;
 
-    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Entering variables");
+    expectOrError(TokenType.KEYWORD, "variables", token);
+
+    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
     System.out.println("Expecting define next");
 
-    while ((!peekNextToken().TYPE.equals("keyword")
-            || !peekNextToken().VALUE.equals("implementations"))
-        && (!peekNextToken().TYPE.equals("keyword") || !peekNextToken().VALUE.equals("begin")))
-      define(getNextToken());
+    // TODO: Missing null checks
+    while (!expect(TokenType.KEYWORD, "implementations", peekNextToken())
+        && !expect(TokenType.KEYWORD, "begin", peekNextToken())) define(getNextToken());
   }
 
   private void define(Token token) {
-    System.out.println("Entering define");
-    if (!expect("keyword", "define", token)) System.exit(1);
+    if (token == null) return;
 
-    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
-    // TODO: Consider having identifier, and other functions return their token value
+    System.out.println("Entering define");
+    expectOrError(TokenType.KEYWORD, "define", token);
+
+    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
+
     System.out.println("Expecting an identifier next");
+    // TODO: Missing null checks
     identifier(getNextToken());
     System.out.println("Back in define");
 
     System.out.println("Expecting of next");
+    // TODO: Missing null checks
     of(getNextToken());
   }
 
   private void of(Token token) {
-    System.out.println("Entering of");
-    if (!expect("keyword", "of", token)) System.exit(1);
+    if (token == null) return;
 
-    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Entering of");
+    expectOrError(TokenType.KEYWORD, "of", token);
+
+    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
     System.out.println("Expecting type next");
+    // TODO: Missing null checks
     type(getNextToken());
   }
 
   private void type(Token token) {
-    System.out.println("Entering type");
-    if (!expect("keyword", "type", token)) System.exit(1);
+    if (token == null) return;
 
-    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Entering type");
+    expectOrError(TokenType.KEYWORD, "type", token);
+
+    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
     System.out.println("Expecting either unsigned, integer, short, long, or byte next");
 
+    // TODO: Missing null checks
     Token nextToken = peekNextToken();
     switch (nextToken.VALUE) {
       case "unsigned":
@@ -315,20 +384,22 @@ public class Parser {
         _byte(getNextToken());
         break;
       default:
-        // TODO: bring this error message inline with the other error messags
-        System.err.println("Unexpected token");
-        System.exit(1);
-        break;
+        throw new UnexpectedTokenException(
+            String.format(
+                "Unexpected token with type %s and value %s", nextToken.TYPE, nextToken.VALUE));
     }
   }
 
   private void unsigned(Token token) {
-    System.out.println("Entering unsigned");
-    if (!expect("keyword", "unsigned", token)) System.exit(1);
+    if (token == null) return;
 
-    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Entering unsigned");
+    expectOrError(TokenType.KEYWORD, "unsigned", token);
+
+    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
     System.out.println("Expecting either integer, short, or long next");
 
+    // TODO: Missing null checks
     Token nextToken = peekNextToken();
     switch (nextToken.VALUE) {
       case "integer":
@@ -341,88 +412,110 @@ public class Parser {
         _long(getNextToken());
         break;
       default:
-        // TODO: bring this error message inline with the other error messags
-        System.err.println("Unexpected token");
-        System.exit(1);
-        break;
+        throw new UnexpectedTokenException(
+            String.format(
+                "Unexpected token with type %s and value %s", nextToken.TYPE, nextToken.VALUE));
     }
   }
 
   private void integer(Token token) {
-    System.out.println("Entering integer");
-    if (!expect("keyword", "integer", token)) System.exit(1);
+    if (token == null) return;
 
-    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Entering integer");
+    expectOrError(TokenType.KEYWORD, "integer", token);
+
+    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
   }
 
   private void _short(Token token) {
-    System.out.println("Entering short");
-    if (!expect("keyword", "short", token)) System.exit(1);
+    if (token == null) return;
 
-    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Entering short");
+    expectOrError(TokenType.KEYWORD, "short", token);
+
+    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
   }
 
   private void _long(Token token) {
-    System.out.println("Entering long");
-    if (!expect("keyword", "long", token)) System.exit(1);
+    if (token == null) return;
 
-    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Entering long");
+    expectOrError(TokenType.KEYWORD, "long", token);
+
+    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
   }
 
   private void _byte(Token token) {
-    System.out.println("Entering byte");
-    if (!expect("keyword", "byte", token)) System.exit(1);
+    if (token == null) return;
 
-    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Entering byte");
+    expectOrError(TokenType.KEYWORD, "byte", token);
+
+    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
   }
 
   private void implementation(Token token) {
-    System.out.println("Entering implementations");
-    if (!expect("keyword", "implementations", token)) System.exit(1);
+    if (token == null) return;
 
-    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Entering implementations");
+    expectOrError(TokenType.KEYWORD, "implementations", token);
+
+    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
     System.out.println("Expecting function next");
+    // TODO: Missing null checks
     function(getNextToken());
   }
 
   private void function(Token token) {
-    System.out.println("Entering function");
-    if (!expect("keyword", "function", token)) System.exit(1);
+    if (token == null) return;
 
-    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Entering function");
+    expectOrError(TokenType.KEYWORD, "function", token);
+
+    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
     System.out.println("Expecting identifer next");
+    // TODO: Missing null checks
     identifier(getNextToken());
 
     System.out.println("Back in function");
     System.out.println("Expecting is next");
+    // TODO: Missing null checks
     is(getNextToken());
 
     System.out.println("Back in function");
     System.out.println("Expecting endfun next");
+    // TODO: Missing null checks
     endfun(getNextToken());
   }
 
   private void is(Token token) {
-    System.out.println("Entering is");
-    if (!expect("keyword", "is", token)) System.exit(1);
+    if (token == null) return;
 
-    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Entering is");
+    expectOrError(TokenType.KEYWORD, "is", token);
+
+    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
     System.out.println("Expecting variables next");
+    // TODO: Missing null checks
     variables(getNextToken());
 
     System.out.println("Back in is");
     System.out.println("Expecting begin next");
+    // TODO: Missing null checks
     _begin(getNextToken());
   }
 
   private void _begin(Token token) {
-    System.out.println("Entering begin");
-    if (!expect("keyword", "begin", token)) System.exit(1);
+    if (token == null) return;
 
-    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Entering begin");
+    expectOrError(TokenType.KEYWORD, "begin", token);
+
+    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
     System.out.println("Expecting either set, display, or exit next");
 
-    while (!peekNextToken().TYPE.equals("keyword") || !peekNextToken().VALUE.equals("endfun")) {
+    // TODO: Missing null checks
+    while (!expect(TokenType.KEYWORD, "endfun", peekNextToken())) {
       Token nextToken = peekNextToken();
       switch (nextToken.VALUE) {
         case "set":
@@ -435,60 +528,69 @@ public class Parser {
           exit(getNextToken());
           break;
         default:
-          // TODO: bring this error message inline with the other error messags
-          System.err.println("Unexpected token");
-          System.err.println(getNextToken().VALUE);
-          System.exit(1);
-          break;
+        throw new UnexpectedTokenException(
+            String.format(
+                "Unexpected token with type %s and value %s", nextToken.TYPE, nextToken.VALUE));
       }
     }
   }
 
   private void set(Token token) {
-    System.out.println("Entering set");
-    if (!expect("keyword", "set", token)) System.exit(1);
+    if (token == null) return;
 
-    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Entering set");
+    expectOrError(TokenType.KEYWORD, "set", token);
+
+    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
     System.out.println("Expecting an identifier next");
+    // TODO: Missing null checks
     identifier(getNextToken());
   }
 
   private void display(Token token) {
-    System.out.println("Entering display");
-    if (!expect("keyword", "display", token)) System.exit(1);
+    if (token == null) return;
 
-    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Entering display");
+    expectOrError(TokenType.KEYWORD, "display", token);
+
+    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
     System.out.println("Expecting an identifier or literal next");
 
     Token nextToken = peekNextToken();
+    if (nextToken == null) throw new TokenNotFoundException();
+
     switch (nextToken.TYPE) {
-      case "identifier":
+      case IDENTIFIER:
         identifier(getNextToken());
         break;
-      case "literal":
+      case LITERAL:
         literal(getNextToken());
         break;
       default:
-        // TODO: bring this error message inline with the other error messags
-        System.err.println("Unexpected token");
-        System.exit(1);
-        break;
+        throw new UnexpectedTokenException(
+            String.format(
+                "Unexpected token with type %s and value %s", nextToken.TYPE, nextToken.VALUE));
     }
   }
 
   private void exit(Token token) {
-    System.out.println("Entering exit");
-    if (!expect("keyword", "exit", token)) System.exit(1);
+    if (token == null) return;
 
-    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Entering exit");
+    expectOrError(TokenType.KEYWORD, "exit", token);
+
+    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
   }
 
   private void endfun(Token token) {
-    System.out.println("Entering endfun");
-    if (!expect("keyword", "endfun", token)) System.exit(1);
+    if (token == null) return;
 
-    System.out.println(String.format("Found a %s with value %s ", token.TYPE, token.VALUE));
+    System.out.println("Entering endfun");
+    expectOrError(TokenType.KEYWORD, "endfun", token);
+
+    System.out.println(String.format(tokenFoundFormatString, token.TYPE, token.VALUE));
     System.out.println("Expecting identifier next");
+    // TODO: Missing null checks
     identifier(getNextToken());
   }
 

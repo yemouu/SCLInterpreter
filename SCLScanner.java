@@ -154,14 +154,15 @@ public class SCLScanner {
             // symbols. Strings are checked depending on if they start and end with quotation marks
             // while constants are checked by if they start with a digit. We assume that everything
             // else is an identifier.
-            if (KEYWORDS.contains(token)) tokens.add(new Token("keyword", token));
-            else if (OPERATORS.contains(token)) tokens.add(new Token("operator", token));
+            if (KEYWORDS.contains(token)) tokens.add(new Token(TokenType.KEYWORD, token));
+            else if (OPERATORS.contains(token)) tokens.add(new Token(TokenType.OPERATOR, token));
             else if (SPECIAL_SYMBOLS.contains(token))
-              tokens.add(new Token("special_symbol", token));
+              tokens.add(new Token(TokenType.SPECIAL_SYMBOL, token));
             else if (token.startsWith("\"") && token.endsWith("\""))
-              tokens.add(new Token("literal", token));
-            else if (Character.isDigit(token.charAt(0))) tokens.add(new Token("constant", token));
-            else tokens.add(new Token("identifier", token));
+              tokens.add(new Token(TokenType.LITERAL, token));
+            else if (Character.isDigit(token.charAt(0)))
+              tokens.add(new Token(TokenType.CONSTANT, token));
+            else tokens.add(new Token(TokenType.IDENTIFIER, token));
             token = "";
           }
 
