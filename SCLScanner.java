@@ -218,7 +218,7 @@ public class SCLScanner {
               + "\": {\n\t\t\"Type\": \""
               + token.TYPE
               + "\",\n\t\t\"value\": \""
-              + (!token.TYPE.equals("literal") ? token.VALUE : jsonStringLiteralHelper(token.VALUE))
+              + (token.TYPE != TokenType.LITERAL ? token.VALUE : jsonStringLiteralHelper(token.VALUE))
               + "\"\n\t}";
       if ((i + 1) != tokens.size()) json += ",";
     }
