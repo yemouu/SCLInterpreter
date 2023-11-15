@@ -9,22 +9,12 @@ import java.util.List;
 //       operators. Some operators need two operands while others only need one.
 // TODO: Consider having identifier, and other functions return their token value
 public class Parser {
-  private class KeyValuePair {
-    public final String IDENT;
-    public String VALUE;
-
-    public KeyValuePair(String IDENT, String VALUE) {
-      this.IDENT = IDENT;
-      this.VALUE = VALUE;
-    }
-  }
-
+  private List<String> identifiers = new ArrayList<>();
   private List<Token> statementBuilder = new ArrayList<>();
   private List<List<Token>> statements = new ArrayList<>();
 
   private List<Token> tokens;
   private int index = -1;
-  private List<KeyValuePair> identifiers = new ArrayList<>();
 
   private boolean verbose = false;
 
@@ -56,11 +46,6 @@ public class Parser {
 
   public List<List<Token>> getStatements() {
     return statements;
-  }
-
-  public boolean identifierExists(String identifier) {
-    for (KeyValuePair ident : identifiers) if (ident.IDENT.equals(identifier)) return true;
-    return false;
   }
 
   private boolean expect(TokenType expectedTokenType, Token token) {
@@ -187,10 +172,31 @@ public class Parser {
     expectOrError(TokenType.IDENTIFIER, token);
     foundToken(token);
 
-    // TODO: Add all identifiers and their values to some sort of datastructure so they can be
-    //       recalled later.
-    //       This may have to be in a second pass when we have the values and the identifier
-    //       together. Currently we can only check if we have already encountered an identifier.
+    // Check to see if the identifier is being defined or accessed. We can tell if the identifier is
+    // being defined if peekPrevToken() reveals either the define, function, or symbol token. If
+    // neither of those tokens are revealed, the identifier is being accessed.
+    // If the identifier is being defined, check if it was already defined. If it was, this is a
+    // parse error.
+    // If the identifier is being accessed, check if it was already defined. If it wasn't this is
+    // also a parse error
+    Token prevToken = peekPrevToken();
+    if (prevToken == null) throw new TokenNotFoundException();
+
+    if (expect(TokenType.KEYWORD, "define", prevToken)
+        || expect(TokenType.KEYWORD, "symbol", prevToken)
+        || expect(TokenType.KEYWORD, "function", prevToken)) {
+      if (identifiers.contains(token.VALUE))
+        throw new IdentifierAleadyDefinedException(
+            "Identifier " + token.VALUE + "  was already defined");
+
+      log("New identifier " + token.VALUE + "was added to identifiers list");
+      identifiers.add(token.VALUE);
+    } else {
+      if (!identifiers.contains(token.VALUE))
+        throw new IdentifierNotDefinedException(
+            "Tried accessing identifier " + token.VALUE + " but it was not defined yet");
+    }
+
     log("Expecting a literal, constant, operator, special_symbol, end of statement, or nothing");
 
     Token nextToken = peekNextToken();
