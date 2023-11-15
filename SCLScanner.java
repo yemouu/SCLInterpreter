@@ -9,10 +9,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-// TODO: Add end of statement keyword
-// Each statement should be a single line, so the newline character should be the end of statement
-// keyword. End of statement will help us catch errors as well as know when we have the entire
-// statement to execute
 public class SCLScanner {
   // hardcode keywords
   private static final Set<String> KEYWORDS =
@@ -51,6 +47,17 @@ public class SCLScanner {
   // Methods will be provided to access the tokens.
   private List<Token> tokens;
 
+  // Remove back to back end of statement tokens
+  private void cleanTokens() {
+    for (int i = 0; i < tokens.size() - 1; i++) {
+      if (tokens.get(i).TYPE == TokenType.END_OF_STATEMENT
+          && tokens.get(i + 1).TYPE == TokenType.END_OF_STATEMENT) {
+        tokens.remove(i + 1);
+        i--;
+      }
+    }
+  }
+
   // Parse the file for all tokens while excluding comments and docstrings.
   public void tokenize(File file) {
     // Create a new ArrayList to hold all of the tokens.
@@ -67,6 +74,10 @@ public class SCLScanner {
       // Read each character of the file.
       // If we get -1 back, we have reached the end of the file.
       while ((character = fileReader.read()) != -1) {
+        // This character is usually only used on windows and is always followed by \n which we
+        // actually manage.
+        if (character == '\r') continue;
+
         // Check for comments.
         // When we see a forward slash, we will look at the next character in the file.
         // We also enter this block if we see that description is our token.
@@ -77,6 +88,8 @@ public class SCLScanner {
           // From here we can chew through the file until we reach the character combination `*/`.
           // We also enter this block if we see that description is our token.
           // We assume that description is a docstring and works like a multi line comment.
+          // NOTE: If a multiline comment starts at the end of a statement, the end of statement
+          //       token will be missing
           if (nextCharacter == '*' || token.equals("description")) {
             int previousCharacter;
 
@@ -99,7 +112,14 @@ public class SCLScanner {
           } else if (nextCharacter == '/') {
             // If instead of an asterisk we find another forward slash,
             // we read to the end of the line and then read the next character.
-            while ((character = fileReader.read()) != -1) if (character == '\n') break;
+            while ((character = fileReader.read()) != -1)
+              if (character == '\n') {
+                // Because the newline character is consumed here instead of later, we need to add
+                // the end of statement token here as well. If we don't do this, comments on the
+                // same line as code won't get their end of statement token.
+                tokens.add(new Token(TokenType.END_OF_STATEMENT, "EOS"));
+                break;
+              }
             // Nothing left to do this iteration
             continue;
           } else {
@@ -161,10 +181,20 @@ public class SCLScanner {
             else if (token.startsWith("\"") && token.endsWith("\""))
               tokens.add(new Token(TokenType.LITERAL, token));
             else if (Character.isDigit(token.charAt(0)))
+              // NOTE: In the case of hex values that don't start with a digit, they will
+              // be misinterpreted as an identifier. This doesn't effect the test file
+              // that we use but if this were to be used on a wider range of SCL files,
+              // this may need to be addressed.
               tokens.add(new Token(TokenType.CONSTANT, token));
             else tokens.add(new Token(TokenType.IDENTIFIER, token));
             token = "";
           }
+
+          // Because the SCL languages doesn't use semicolons as an end of statement token,
+          // we treat newlines as the end of statement token. With the way this is implemented,
+          // there will be back to back end of statement tokens. To fix this, we will remove back to
+          // back end of statement tokens after tokenizing everything.
+          if (character == '\n') tokens.add(new Token(TokenType.END_OF_STATEMENT, "EOS"));
 
           // If the current character was a whitespace, read the next character instead of
           // adding the whitespace into the next token.
@@ -181,6 +211,7 @@ public class SCLScanner {
         // Add the current character to the token
         token += (char) character;
       }
+      cleanTokens();
     } catch (FileNotFoundException error) {
       error.printStackTrace();
       System.exit(1);
@@ -218,7 +249,9 @@ public class SCLScanner {
               + "\": {\n\t\t\"Type\": \""
               + token.TYPE
               + "\",\n\t\t\"value\": \""
-              + (token.TYPE != TokenType.LITERAL ? token.VALUE : jsonStringLiteralHelper(token.VALUE))
+              + (token.TYPE != TokenType.LITERAL
+                  ? token.VALUE
+                  : jsonStringLiteralHelper(token.VALUE))
               + "\"\n\t}";
       if ((i + 1) != tokens.size()) json += ",";
     }
