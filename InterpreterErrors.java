@@ -31,3 +31,7 @@ class UnmatchedToken extends RuntimeException {
     super(errorMessage);
   }
 }
+
+class EndOfStatementsException extends RuntimeException {
+  public EndOfStatementsException() {}
+}

@@ -8,9 +8,12 @@ import java.util.Map;
 // TODO: Reduce use of "magic" numbers
 public class Interpreter {
   private final List<List<Token>> statements;
+  private int index = -1;
+
+  private Map<String, TypedValue> identifiers = new HashMap<>();
+
   private List<List<List<Token>>> subprograms = new ArrayList<>();
   private List<List<Token>> subprogramBuilder = new ArrayList<>();
-  private Map<String, TypedValue> identifiers = new HashMap<>();
 
   private boolean verbose = false;
 
@@ -30,9 +33,19 @@ public class Interpreter {
     System.err.println(message);
   }
 
+  private List<Token> peekNextStatement() {
+    if (index + 1 >= 0 && index + 1 < statements.size()) return statements.get(index + 1);
+    else return null;
+  }
+
+  private List<Token> getNextStatement() {
+    if (index + 1 >= 0 && index + 1 < statements.size()) return statements.get(++index);
+    else throw new EndOfStatementsException();
+  }
+
   public void execute() {
-    for (int i = 0; i < statements.size(); i++) {
-      List<Token> statement = statements.get(i);
+    while (peekNextStatement() != null) {
+      List<Token> statement = getNextStatement();
       Token startToken = statement.get(0);
 
       switch (startToken.VALUE) {
@@ -43,10 +56,10 @@ public class Interpreter {
           symbol(statement);
           break;
         case "global":
-          i += global(statement, i);
+          global(statement);
           break;
         case "implementations":
-          i += implementations(statement, i);
+          implementations(statement);
           break;
         default:
           throw new UnexpectedTokenException(
@@ -243,26 +256,20 @@ public class Interpreter {
   }
 
   // Global will be managing multiple statements so it will return its
-  private int global(List<Token> statement, int statementsIndex) {
+  private void global(List<Token> statement) {
     log("Processing global");
-    return 1 + variables(statements.get(statementsIndex + 1), statementsIndex + 1);
+    variables(getNextStatement());
   }
 
-  private int variables(List<Token> statement, int statementsIndex) {
+  private void variables(List<Token> statement) {
     log("Processing variables");
-    int advanceTokens = 0;
 
-    List<Token> nextStatement = statements.get(++statementsIndex);
-    while (nextStatement.get(0).VALUE.equals("define")) {
-      advanceTokens++;
-      define(nextStatement);
-
-      if ((statementsIndex + 1) < statements.size())
-        nextStatement = statements.get(++statementsIndex);
-      else break;
+    List<Token> nextStatement = peekNextStatement();
+    while (nextStatement != null && nextStatement.get(0).VALUE.equals("define")) {
+      List<Token> stmt = getNextStatement();
+      define(stmt);
+      nextStatement = peekNextStatement();
     }
-
-    return advanceTokens;
   }
 
   private void define(List<Token> statement) {
@@ -289,13 +296,13 @@ public class Interpreter {
     log("Defining variable " + identifier.VALUE + " with type " + type);
   }
 
-  private int implementations(List<Token> statement, int statementsIndex) {
+  private void implementations(List<Token> statement) {
     log("Processing implementations");
     // We currently only check for one function when there could be multiple
-    return 1 + function(statements.get(statementsIndex + 1), statementsIndex + 1);
+    function(getNextStatement());
   }
 
-  private int function(List<Token> statement, int statementsIndex) {
+  private void function(List<Token> statement) {
     log("Processing function");
 
     // TODO: create a helper function to add identifiers to the identifier list.
@@ -308,27 +315,18 @@ public class Interpreter {
 
     log("Defining subprogram " + identifier.VALUE + " with address " + typedValue.VALUE);
 
-    int advanceIndex = 1;
-    advanceIndex +=
-        variables(statements.get(statementsIndex + advanceIndex), statementsIndex + advanceIndex);
-
-    advanceIndex += 1;
-    advanceIndex +=
-        begin(statements.get(statementsIndex + advanceIndex), statementsIndex + advanceIndex);
-
-    return advanceIndex;
+    variables(getNextStatement());
+    begin(getNextStatement());
   }
 
-  private int begin(List<Token> statement, int statementsIndex) {
+  private void begin(List<Token> statement) {
     log("Processing begin");
-    int advanceTokens = 0;
 
-    List<Token> nextStatement = statements.get(++statementsIndex);
+    List<Token> nextStatement = getNextStatement();
     while (nextStatement.get(0).VALUE.equals("endfun")
         || nextStatement.get(0).VALUE.equals("set")
         || nextStatement.get(0).VALUE.equals("exit")
         || nextStatement.get(0).VALUE.equals("display")) {
-      advanceTokens++;
 
       switch (nextStatement.get(0).VALUE) {
         case "display":
@@ -346,12 +344,9 @@ public class Interpreter {
           break;
       }
 
-      if ((statementsIndex + 1) < statements.size())
-        nextStatement = statements.get(++statementsIndex);
-      else break;
+      if (peekNextStatement() == null) break;
+      nextStatement = getNextStatement();
     }
-
-    return advanceTokens;
   }
 
   private void set(List<Token> statement) {
