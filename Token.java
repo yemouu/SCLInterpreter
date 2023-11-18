@@ -8,10 +8,12 @@ public class Token {
   }
 
   public static boolean expect(TokenType expectedType, Token token) {
+    if (token == null) return false;
     return expectedType == token.TYPE;
   }
 
   public static boolean expect(TokenType expectedType, String expectedValue, Token token) {
+    if (token == null) return false;
     return (expectedType == token.TYPE) && expectedValue.equals(token.VALUE);
   }
 
