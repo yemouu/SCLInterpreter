@@ -3,17 +3,12 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 
-// TODO: Do more checks during parsing
-//       Currently, most checks being done are purely for the type of token we expect next rather
-//       than the token's type. This is fine for parsing some tokens but can lead to issues for
-//       operators. Some operators need two operands while others only need one.
-// TODO: Consider having identifier, and other functions return their token value
 public class Parser {
   private List<String> identifiers = new ArrayList<>();
   private List<Token> statementBuilder = new ArrayList<>();
   private List<List<Token>> statements = new ArrayList<>();
 
-  private List<Token> tokens;
+  private final List<Token> tokens;
   private int index = -1;
 
   private boolean verbose = false;
@@ -129,6 +124,15 @@ public class Parser {
     expectOrError(TokenType.LITERAL, token);
     foundToken(token);
 
+    Token prevToken = peekPrevToken();
+    if (prevToken == null) throw new TokenNotFoundException();
+
+    if (expect(TokenType.KEYWORD, "import", prevToken)) {
+      log("Previous token was keyword:import, expecting end of statement");
+      eos(getNextToken());
+      return;
+    }
+
     log("Expecting an operator, special_symbol, end of statement, or nothing");
 
     Token nextToken = peekNextToken();
@@ -195,6 +199,12 @@ public class Parser {
       if (!identifiers.contains(token.VALUE))
         throw new IdentifierNotDefinedException(
             "Tried accessing identifier " + token.VALUE + " but it was not defined yet");
+    }
+
+    if (expect(TokenType.KEYWORD, "endfun", prevToken)) {
+      log("Previous token was keyword:endfun, expecting end of statement");
+      eos(getNextToken());
+      return;
     }
 
     log("Expecting a literal, constant, operator, special_symbol, end of statement, or nothing");
@@ -464,6 +474,8 @@ public class Parser {
     eos(getNextToken());
   }
 
+  // TODO: This should actually be repeatedly checking for functions instead of only checking for one function.
+  //       This should be done until the end of the file it seems.
   private void implementation(Token token) {
     log("Entering implementations");
     expectOrError(TokenType.KEYWORD, "implementations", token);
