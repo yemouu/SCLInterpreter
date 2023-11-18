@@ -3,70 +3,88 @@ public class SCLUnsignedInteger extends TypedNumericValue {
     super(SCLTypes.UNSIGNED_INTEGER, value);
   }
 
-  // This operation will lose percision
+  // Convert unsigned integer to byte
+  // This operation will cause a loss of percision
   public SCLByte toSCLByte() {
+    if (VALUE == null) throw new VariableNotYetDefined();
+
     String hexStr = Integer.toHexString(Integer.parseUnsignedInt(VALUE));
     if (hexStr.length() < 2) hexStr = "0" + hexStr;
 
     return new SCLByte("0" + hexStr + "h");
   }
 
-  public TypedNumericValue binaryAnd(TypedNumericValue rightHandSide) {
+  public TypedNumericValue binaryAnd(TypedNumericValue rightSide) {
+    if (VALUE == null || rightSide == null) throw new VariableNotYetDefined();
+
     int lhs = Integer.parseUnsignedInt(VALUE);
 
     int rhs;
-    if (rightHandSide.TYPE == SCLTypes.BYTE)
-      rhs = Integer.parseUnsignedInt(rightHandSide.VALUE.substring(1, 3), 16);
-    else rhs = Integer.parseUnsignedInt(rightHandSide.VALUE);
+    if (rightSide.TYPE == SCLTypes.BYTE)
+      // Grab the 2 characters inside of the SCL hex value and parse it as an unsigned integer. We
+      // don't hard code the end index because our SCL hex value could be either 3 or 4 characters.
+      rhs =
+          Integer.parseUnsignedInt(rightSide.VALUE.substring(1, rightSide.VALUE.length() - 1), 16);
+    else rhs = Integer.parseUnsignedInt(rightSide.VALUE);
 
     return new SCLUnsignedInteger(Integer.toUnsignedString(lhs & rhs));
   }
 
-  public TypedNumericValue binaryOr(TypedNumericValue rightHandSide) {
+  public TypedNumericValue binaryOr(TypedNumericValue rightSide) {
+    if (VALUE == null || rightSide == null) throw new VariableNotYetDefined();
+
     int lhs = Integer.parseUnsignedInt(VALUE);
 
     int rhs;
-    if (rightHandSide.TYPE == SCLTypes.BYTE)
-      rhs = Integer.parseUnsignedInt(rightHandSide.VALUE.substring(1, 3), 16);
-    else rhs = Integer.parseUnsignedInt(rightHandSide.VALUE);
+    if (rightSide.TYPE == SCLTypes.BYTE)
+      rhs = Integer.parseUnsignedInt(rightSide.VALUE.substring(1, rightSide.VALUE.length() - 1), 16);
+    else rhs = Integer.parseUnsignedInt(rightSide.VALUE);
 
     return new SCLUnsignedInteger(Integer.toUnsignedString(lhs | rhs));
   }
 
-  public TypedNumericValue binaryXor(TypedNumericValue rightHandSide) {
+  public TypedNumericValue binaryXor(TypedNumericValue rightSide) {
+    if (VALUE == null || rightSide == null) throw new VariableNotYetDefined();
+
     int lhs = Integer.parseUnsignedInt(VALUE);
 
     int rhs;
-    if (rightHandSide.TYPE == SCLTypes.BYTE)
-      rhs = Integer.parseUnsignedInt(rightHandSide.VALUE.substring(1, 3), 16);
-    else rhs = Integer.parseUnsignedInt(rightHandSide.VALUE);
+    if (rightSide.TYPE == SCLTypes.BYTE)
+      rhs = Integer.parseUnsignedInt(rightSide.VALUE.substring(1, rightSide.VALUE.length() - 1), 16);
+    else rhs = Integer.parseUnsignedInt(rightSide.VALUE);
 
     return new SCLUnsignedInteger(Integer.toUnsignedString(lhs ^ rhs));
   }
 
-  public TypedNumericValue leftShift(TypedNumericValue rightHandSide) {
+  public TypedNumericValue leftShift(TypedNumericValue rightSide) {
+    if (VALUE == null || rightSide == null) throw new VariableNotYetDefined();
+
     int lhs = Integer.parseUnsignedInt(VALUE);
 
     int rhs;
-    if (rightHandSide.TYPE == SCLTypes.BYTE)
-      rhs = Integer.parseUnsignedInt(rightHandSide.VALUE.substring(1, 3), 16);
-    else rhs = Integer.parseUnsignedInt(rightHandSide.VALUE);
+    if (rightSide.TYPE == SCLTypes.BYTE)
+      rhs = Integer.parseUnsignedInt(rightSide.VALUE.substring(1, rightSide.VALUE.length() - 1), 16);
+    else rhs = Integer.parseUnsignedInt(rightSide.VALUE);
 
     return new SCLUnsignedInteger(Integer.toUnsignedString(lhs << rhs));
   }
 
   public TypedNumericValue negate() {
+    if (VALUE == null) throw new VariableNotYetDefined();
+
     int rawValue = Integer.parseUnsignedInt(VALUE);
     return new SCLUnsignedInteger(Integer.toUnsignedString(~rawValue));
   }
 
-  public TypedNumericValue rightShift(TypedNumericValue rightHandSide) {
+  public TypedNumericValue rightShift(TypedNumericValue rightSide) {
+    if (VALUE == null || rightSide == null) throw new VariableNotYetDefined();
+
     int lhs = Integer.parseUnsignedInt(VALUE);
 
     int rhs;
-    if (rightHandSide.TYPE == SCLTypes.BYTE)
-      rhs = Integer.parseUnsignedInt(rightHandSide.VALUE.substring(1, 3), 16);
-    else rhs = Integer.parseUnsignedInt(rightHandSide.VALUE);
+    if (rightSide.TYPE == SCLTypes.BYTE)
+      rhs = Integer.parseUnsignedInt(rightSide.VALUE.substring(1, rightSide.VALUE.length() - 1), 16);
+    else rhs = Integer.parseUnsignedInt(rightSide.VALUE);
 
     return new SCLUnsignedInteger(Integer.toUnsignedString(lhs >>> rhs));
   }

@@ -17,6 +17,10 @@ class UnexpectedNumberOfArguments extends RuntimeException {
 }
 
 class VariableNotYetDefined extends RuntimeException {
+  public VariableNotYetDefined() {
+    super();
+  }
+
   public VariableNotYetDefined(String errorMessage) {
     super(errorMessage);
   }

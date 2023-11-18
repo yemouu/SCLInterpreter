@@ -1,23 +1,30 @@
-// TODO: the VALUE can be empty, so check before doing any operations and throw errors if the VALUE
-//       is null
 public class SCLByte extends TypedNumericValue {
   public SCLByte(String value) {
     super(SCLTypes.BYTE, value);
   }
 
+  // Check if a string is a SCL hex.
+  // SCL hexes start with 0 and end with h and can be either 3 or 4 characters long
   public static boolean isSCLByte(String str) {
     return ((str.length() == 4 || str.length() == 3)
         && str.charAt(0) == '0'
         && str.charAt(str.length() - 1) == 'h');
   }
 
+  // Convert SCLByte to an SCLUnsignedInteger
   public SCLUnsignedInteger toSCLUnsignedInteger() {
+    if (VALUE == null) throw new VariableNotYetDefined();
+
     return new SCLUnsignedInteger(
         Integer.toUnsignedString(
             Integer.parseUnsignedInt(VALUE.substring(1, VALUE.length() - 1), 16)));
   }
 
   public TypedNumericValue binaryAnd(TypedNumericValue rightSide) {
+    if (VALUE == null || rightSide == null) throw new VariableNotYetDefined();
+
+    // Grab the 2 characters inside of the SCL hex value and parse it as an unsigned integer. We
+    // don't hard code the end index because our SCL hex value could be either 3 or 4 characters.
     int lhs = Integer.parseUnsignedInt(VALUE.substring(1, VALUE.length() - 1), 16);
 
     int rhs;
@@ -30,6 +37,8 @@ public class SCLByte extends TypedNumericValue {
   }
 
   public TypedNumericValue binaryOr(TypedNumericValue rightSide) {
+    if (VALUE == null || rightSide == null) throw new VariableNotYetDefined();
+
     int lhs = Integer.parseUnsignedInt(VALUE.substring(1, VALUE.length() - 1), 16);
 
     int rhs;
@@ -42,6 +51,8 @@ public class SCLByte extends TypedNumericValue {
   }
 
   public TypedNumericValue binaryXor(TypedNumericValue rightSide) {
+    if (VALUE == null || rightSide == null) throw new VariableNotYetDefined();
+
     int lhs = Integer.parseUnsignedInt(VALUE.substring(1, VALUE.length() - 1), 16);
 
     int rhs;
@@ -54,6 +65,8 @@ public class SCLByte extends TypedNumericValue {
   }
 
   public TypedNumericValue leftShift(TypedNumericValue rightSide) {
+    if (VALUE == null || rightSide == null) throw new VariableNotYetDefined();
+
     int lhs = Integer.parseUnsignedInt(VALUE.substring(1, VALUE.length() - 1), 16);
 
     int rhs;
@@ -66,11 +79,15 @@ public class SCLByte extends TypedNumericValue {
   }
 
   public TypedNumericValue negate() {
+    if (VALUE == null) throw new VariableNotYetDefined();
+
     int rawValue = Integer.parseUnsignedInt(VALUE.substring(1, VALUE.length() - 1), 16);
     return new SCLByte(intToSCLHex(~rawValue));
   }
 
   public TypedNumericValue rightShift(TypedNumericValue rightSide) {
+    if (VALUE == null || rightSide == null) throw new VariableNotYetDefined();
+
     int lhs = Integer.parseUnsignedInt(VALUE.substring(1, VALUE.length() - 1), 16);
 
     int rhs;
