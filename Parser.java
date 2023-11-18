@@ -43,30 +43,6 @@ public class Parser {
     return statements;
   }
 
-  private boolean expect(TokenType expectedTokenType, Token token) {
-    return expectedTokenType == token.TYPE;
-  }
-
-  private boolean expect(TokenType expectedTokenType, String expectedTokenValue, Token token) {
-    return (expectedTokenType == token.TYPE) && expectedTokenValue.equals(token.VALUE);
-  }
-
-  private void expectOrError(TokenType expectedType, Token token) throws UnexpectedTokenException {
-    if (!expect(expectedType, token))
-      throw new UnexpectedTokenException(
-          String.format(
-              "Expected token with type %s, got token with type %s and value %s",
-              expectedType, token.TYPE, token.VALUE));
-  }
-
-  private void expectOrError(TokenType expectedType, String expectedValue, Token token)
-      throws UnexpectedTokenException {
-    if (!expect(expectedType, expectedValue, token))
-      throw new UnexpectedTokenException(
-          String.format(
-              "Expected token with type %s and value %s, got a token with type %s and value %s",
-              expectedType, expectedValue, token.TYPE, token.VALUE));
-  }
 
   private void log(String message) {
     if (!verbose) return;
@@ -83,7 +59,7 @@ public class Parser {
     Token nextToken = getNextToken();
 
     log("Next token is of type " + nextToken.TYPE + " and value " + nextToken.VALUE);
-    expectOrError(TokenType.KEYWORD, nextToken);
+    Token.expectOrError(TokenType.KEYWORD, nextToken);
 
     switch (nextToken.VALUE) {
       case "import":
@@ -112,7 +88,7 @@ public class Parser {
 
   private void imports(Token token) {
     log("Entering imports");
-    expectOrError(TokenType.KEYWORD, "import", token);
+    Token.expectOrError(TokenType.KEYWORD, "import", token);
     foundToken(token);
 
     log("Expecting a literal");
@@ -121,13 +97,13 @@ public class Parser {
 
   private void literal(Token token) {
     log("Entering literal");
-    expectOrError(TokenType.LITERAL, token);
+    Token.expectOrError(TokenType.LITERAL, token);
     foundToken(token);
 
     Token prevToken = peekPrevToken();
     if (prevToken == null) throw new TokenNotFoundException();
 
-    if (expect(TokenType.KEYWORD, "import", prevToken)) {
+    if (Token.expect(TokenType.KEYWORD, "import", prevToken)) {
       log("Previous token was keyword:import, expecting end of statement");
       eos(getNextToken());
       return;
@@ -155,7 +131,7 @@ public class Parser {
 
   private void eos(Token token) {
     log("Entering end of statement");
-    expectOrError(TokenType.END_OF_STATEMENT, token);
+    Token.expectOrError(TokenType.END_OF_STATEMENT, token);
     foundToken(token);
 
     statements.add(statementBuilder);
@@ -164,7 +140,7 @@ public class Parser {
 
   private void symbols(Token token) {
     log("Entering symbols");
-    expectOrError(TokenType.KEYWORD, "symbol", token);
+    Token.expectOrError(TokenType.KEYWORD, "symbol", token);
     foundToken(token);
 
     log("Expecting an identifier");
@@ -173,7 +149,7 @@ public class Parser {
 
   private void identifier(Token token) {
     log("Entering identifiers");
-    expectOrError(TokenType.IDENTIFIER, token);
+    Token.expectOrError(TokenType.IDENTIFIER, token);
     foundToken(token);
 
     // Check to see if the identifier is being defined or accessed. We can tell if the identifier is
@@ -186,9 +162,9 @@ public class Parser {
     Token prevToken = peekPrevToken();
     if (prevToken == null) throw new TokenNotFoundException();
 
-    if (expect(TokenType.KEYWORD, "define", prevToken)
-        || expect(TokenType.KEYWORD, "symbol", prevToken)
-        || expect(TokenType.KEYWORD, "function", prevToken)) {
+    if (Token.expect(TokenType.KEYWORD, "define", prevToken)
+        || Token.expect(TokenType.KEYWORD, "symbol", prevToken)
+        || Token.expect(TokenType.KEYWORD, "function", prevToken)) {
       if (identifiers.contains(token.VALUE))
         throw new IdentifierAleadyDefinedException(
             "Identifier " + token.VALUE + "  was already defined");
@@ -201,7 +177,7 @@ public class Parser {
             "Tried accessing identifier " + token.VALUE + " but it was not defined yet");
     }
 
-    if (expect(TokenType.KEYWORD, "endfun", prevToken)) {
+    if (Token.expect(TokenType.KEYWORD, "endfun", prevToken)) {
       log("Previous token was keyword:endfun, expecting end of statement");
       eos(getNextToken());
       return;
@@ -235,7 +211,7 @@ public class Parser {
 
   private void constant(Token token) {
     log("Entering constants");
-    expectOrError(TokenType.CONSTANT, token);
+    Token.expectOrError(TokenType.CONSTANT, token);
     foundToken(token);
 
     log("Expecting operator, special_symbol, or nothing");
@@ -262,7 +238,7 @@ public class Parser {
   //       The helper fuction peekPrevToken() should help here.
   private void operator(Token token) {
     log("Entering operator");
-    expectOrError(TokenType.OPERATOR, token);
+    Token.expectOrError(TokenType.OPERATOR, token);
     foundToken(token);
 
     log("Expecting a literal, constant, identifier, operator, or special_symbol");
@@ -293,7 +269,7 @@ public class Parser {
 
   private void special_symbol(Token token) {
     log("Entering special_symbol");
-    expectOrError(TokenType.SPECIAL_SYMBOL, token);
+    Token.expectOrError(TokenType.SPECIAL_SYMBOL, token);
     foundToken(token);
 
     log("Expecting literal, constant, identifier, or nothing");
@@ -321,7 +297,7 @@ public class Parser {
 
   private void globals(Token token) {
     log("Entering globals");
-    expectOrError(TokenType.KEYWORD, "global", token);
+    Token.expectOrError(TokenType.KEYWORD, "global", token);
     foundToken(token);
 
     log("Expecting declarations");
@@ -330,7 +306,7 @@ public class Parser {
 
   private void declarations(Token token) {
     log("Entering declarations");
-    expectOrError(TokenType.KEYWORD, "declarations", token);
+    Token.expectOrError(TokenType.KEYWORD, "declarations", token);
     foundToken(token);
 
     log("Expecting end of statement");
@@ -343,7 +319,7 @@ public class Parser {
 
   private void variables(Token token) {
     log("Entering variables");
-    expectOrError(TokenType.KEYWORD, "variables", token);
+    Token.expectOrError(TokenType.KEYWORD, "variables", token);
     foundToken(token);
 
     log("Expecting end of statement");
@@ -353,8 +329,8 @@ public class Parser {
     log("Expecting defines");
     Token nextToken = peekNextToken();
     while (nextToken != null
-        && !expect(TokenType.KEYWORD, "implementations", nextToken)
-        && !expect(TokenType.KEYWORD, "begin", nextToken)) {
+        && !Token.expect(TokenType.KEYWORD, "implementations", nextToken)
+        && !Token.expect(TokenType.KEYWORD, "begin", nextToken)) {
       define(getNextToken());
       nextToken = peekNextToken();
     }
@@ -362,7 +338,7 @@ public class Parser {
 
   private void define(Token token) {
     log("Entering define");
-    expectOrError(TokenType.KEYWORD, "define", token);
+    Token.expectOrError(TokenType.KEYWORD, "define", token);
     foundToken(token);
 
     log("Expecting an identifier");
@@ -375,7 +351,7 @@ public class Parser {
 
   private void of(Token token) {
     log("Entering of");
-    expectOrError(TokenType.KEYWORD, "of", token);
+    Token.expectOrError(TokenType.KEYWORD, "of", token);
     foundToken(token);
 
     log("Expecting type");
@@ -384,7 +360,7 @@ public class Parser {
 
   private void type(Token token) {
     log("Entering type");
-    expectOrError(TokenType.KEYWORD, "type", token);
+    Token.expectOrError(TokenType.KEYWORD, "type", token);
     foundToken(token);
 
     log("Expecting either unsigned, integer, short, long, or byte");
@@ -415,7 +391,7 @@ public class Parser {
 
   private void unsigned(Token token) {
     log("Entering unsigned");
-    expectOrError(TokenType.KEYWORD, "unsigned", token);
+    Token.expectOrError(TokenType.KEYWORD, "unsigned", token);
     foundToken(token);
 
     log("Expecting either integer, short, or long");
@@ -440,7 +416,7 @@ public class Parser {
 
   private void integer(Token token) {
     log("Entering integer");
-    expectOrError(TokenType.KEYWORD, "integer", token);
+    Token.expectOrError(TokenType.KEYWORD, "integer", token);
     foundToken(token);
 
     log("Expecting end of statement");
@@ -449,7 +425,7 @@ public class Parser {
 
   private void _short(Token token) {
     log("Entering short");
-    expectOrError(TokenType.KEYWORD, "short", token);
+    Token.expectOrError(TokenType.KEYWORD, "short", token);
     foundToken(token);
 
     log("Expecting end of statement");
@@ -458,7 +434,7 @@ public class Parser {
 
   private void _long(Token token) {
     log("Entering long");
-    expectOrError(TokenType.KEYWORD, "long", token);
+    Token.expectOrError(TokenType.KEYWORD, "long", token);
     foundToken(token);
 
     log("Expecting end of statement");
@@ -467,7 +443,7 @@ public class Parser {
 
   private void _byte(Token token) {
     log("Entering byte");
-    expectOrError(TokenType.KEYWORD, "byte", token);
+    Token.expectOrError(TokenType.KEYWORD, "byte", token);
     foundToken(token);
 
     log("Expecting end of statement");
@@ -478,7 +454,7 @@ public class Parser {
   //       This should be done until the end of the file it seems.
   private void implementation(Token token) {
     log("Entering implementations");
-    expectOrError(TokenType.KEYWORD, "implementations", token);
+    Token.expectOrError(TokenType.KEYWORD, "implementations", token);
     foundToken(token);
 
     log("Expecting end of statement");
@@ -491,7 +467,7 @@ public class Parser {
 
   private void function(Token token) {
     log("Entering function");
-    expectOrError(TokenType.KEYWORD, "function", token);
+    Token.expectOrError(TokenType.KEYWORD, "function", token);
     foundToken(token);
 
     log("Expecting identifer");
@@ -508,7 +484,7 @@ public class Parser {
 
   private void is(Token token) {
     log("Entering is");
-    expectOrError(TokenType.KEYWORD, "is", token);
+    Token.expectOrError(TokenType.KEYWORD, "is", token);
     foundToken(token);
 
     log("Expecting end of statement");
@@ -524,7 +500,7 @@ public class Parser {
 
   private void _begin(Token token) {
     log("Entering begin");
-    expectOrError(TokenType.KEYWORD, "begin", token);
+    Token.expectOrError(TokenType.KEYWORD, "begin", token);
     foundToken(token);
 
     log("Expecting end of statement");
@@ -533,7 +509,7 @@ public class Parser {
     log("Back in begin");
     log("Expecting either set, display, or exit");
     Token nextToken = peekNextToken();
-    while (nextToken != null && !expect(TokenType.KEYWORD, "endfun", nextToken)) {
+    while (nextToken != null && !Token.expect(TokenType.KEYWORD, "endfun", nextToken)) {
       switch (nextToken.VALUE) {
         case "set":
           set(getNextToken());
@@ -556,7 +532,7 @@ public class Parser {
 
   private void set(Token token) {
     log("Entering set");
-    expectOrError(TokenType.KEYWORD, "set", token);
+    Token.expectOrError(TokenType.KEYWORD, "set", token);
     foundToken(token);
 
     log("Expecting an identifier");
@@ -565,7 +541,7 @@ public class Parser {
 
   private void display(Token token) {
     log("Entering display");
-    expectOrError(TokenType.KEYWORD, "display", token);
+    Token.expectOrError(TokenType.KEYWORD, "display", token);
     foundToken(token);
 
     log("Expecting an identifier or literal");
@@ -587,7 +563,7 @@ public class Parser {
 
   private void exit(Token token) {
     log("Entering exit");
-    expectOrError(TokenType.KEYWORD, "exit", token);
+    Token.expectOrError(TokenType.KEYWORD, "exit", token);
     foundToken(token);
 
     log("Expecting end of statement");
@@ -596,7 +572,7 @@ public class Parser {
 
   private void endfun(Token token) {
     log("Entering endfun");
-    expectOrError(TokenType.KEYWORD, "endfun", token);
+    Token.expectOrError(TokenType.KEYWORD, "endfun", token);
     foundToken(token);
 
     log("Expecting identifier next");
