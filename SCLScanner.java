@@ -181,10 +181,7 @@ public class SCLScanner {
             else if (token.startsWith("\"") && token.endsWith("\""))
               tokens.add(new Token(TokenType.LITERAL, token));
             else if (Character.isDigit(token.charAt(0)))
-              // NOTE: In the case of hex values that don't start with a digit, they will
-              // be misinterpreted as an identifier. This doesn't effect the test file
-              // that we use but if this were to be used on a wider range of SCL files,
-              // this may need to be addressed.
+              // NOTE: hex values start with a '0' and end with an 'h'
               tokens.add(new Token(TokenType.CONSTANT, token));
             else tokens.add(new Token(TokenType.IDENTIFIER, token));
             token = "";
