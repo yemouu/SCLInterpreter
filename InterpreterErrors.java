@@ -69,3 +69,7 @@ class EndOfStatementsException extends RuntimeException {
 class NotImplementedException extends RuntimeException {
   public NotImplementedException() {}
 }
+
+class StatementNotFoundException extends RuntimeException {
+  public StatementNotFoundException() {}
+}
