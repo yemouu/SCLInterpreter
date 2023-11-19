@@ -20,7 +20,7 @@ public class SCLByte extends TypedNumericValue {
             Integer.parseUnsignedInt(VALUE.substring(1, VALUE.length() - 1), 16)));
   }
 
-  public TypedNumericValue binaryAnd(TypedNumericValue rightSide) {
+  public TypedNumericValue bitwiseAnd(TypedNumericValue rightSide) {
     if (VALUE == null || rightSide == null) throw new VariableNotYetDefined();
 
     // Grab the 2 characters inside of the SCL hex value and parse it as an unsigned integer. We
@@ -36,7 +36,7 @@ public class SCLByte extends TypedNumericValue {
     return new SCLByte(intToSCLHex(lhs & rhs));
   }
 
-  public TypedNumericValue binaryOr(TypedNumericValue rightSide) {
+  public TypedNumericValue bitwiseOr(TypedNumericValue rightSide) {
     if (VALUE == null || rightSide == null) throw new VariableNotYetDefined();
 
     int lhs = Integer.parseUnsignedInt(VALUE.substring(1, VALUE.length() - 1), 16);
@@ -50,7 +50,7 @@ public class SCLByte extends TypedNumericValue {
     return new SCLByte(intToSCLHex(lhs | rhs));
   }
 
-  public TypedNumericValue binaryXor(TypedNumericValue rightSide) {
+  public TypedNumericValue bitwiseXor(TypedNumericValue rightSide) {
     if (VALUE == null || rightSide == null) throw new VariableNotYetDefined();
 
     int lhs = Integer.parseUnsignedInt(VALUE.substring(1, VALUE.length() - 1), 16);

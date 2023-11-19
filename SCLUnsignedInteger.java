@@ -14,7 +14,7 @@ public class SCLUnsignedInteger extends TypedNumericValue {
     return new SCLByte("0" + hexStr + "h");
   }
 
-  public TypedNumericValue binaryAnd(TypedNumericValue rightSide) {
+  public TypedNumericValue bitwiseAnd(TypedNumericValue rightSide) {
     if (VALUE == null || rightSide == null) throw new VariableNotYetDefined();
 
     int lhs = Integer.parseUnsignedInt(VALUE);
@@ -30,7 +30,7 @@ public class SCLUnsignedInteger extends TypedNumericValue {
     return new SCLUnsignedInteger(Integer.toUnsignedString(lhs & rhs));
   }
 
-  public TypedNumericValue binaryOr(TypedNumericValue rightSide) {
+  public TypedNumericValue bitwiseOr(TypedNumericValue rightSide) {
     if (VALUE == null || rightSide == null) throw new VariableNotYetDefined();
 
     int lhs = Integer.parseUnsignedInt(VALUE);
@@ -43,7 +43,7 @@ public class SCLUnsignedInteger extends TypedNumericValue {
     return new SCLUnsignedInteger(Integer.toUnsignedString(lhs | rhs));
   }
 
-  public TypedNumericValue binaryXor(TypedNumericValue rightSide) {
+  public TypedNumericValue bitwiseXor(TypedNumericValue rightSide) {
     if (VALUE == null || rightSide == null) throw new VariableNotYetDefined();
 
     int lhs = Integer.parseUnsignedInt(VALUE);

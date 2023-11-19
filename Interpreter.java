@@ -217,13 +217,13 @@ public class Interpreter {
       Token secondToken = expression.get(1);
       switch (secondToken.VALUE) {
         case "band":
-          returnTypedValue = lhs.binaryAnd(rhs);
+          returnTypedValue = lhs.bitwiseAnd(rhs);
           break;
         case "bor":
-          returnTypedValue = lhs.binaryOr(rhs);
+          returnTypedValue = lhs.bitwiseOr(rhs);
           break;
         case "bxor":
-          returnTypedValue = lhs.binaryXor(rhs);
+          returnTypedValue = lhs.bitwiseXor(rhs);
           break;
         case "lshift":
           returnTypedValue = lhs.leftShift(rhs);

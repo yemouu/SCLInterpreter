@@ -3,11 +3,11 @@ public abstract class TypedNumericValue extends TypedValue {
     super(type, value);
   }
 
-  public abstract TypedNumericValue binaryAnd(TypedNumericValue rightSide);
+  public abstract TypedNumericValue bitwiseAnd(TypedNumericValue rightSide);
 
-  public abstract TypedNumericValue binaryOr(TypedNumericValue rightSide);
+  public abstract TypedNumericValue bitwiseOr(TypedNumericValue rightSide);
 
-  public abstract TypedNumericValue binaryXor(TypedNumericValue rightSide);
+  public abstract TypedNumericValue bitwiseXor(TypedNumericValue rightSide);
 
   public abstract TypedNumericValue leftShift(TypedNumericValue rightSide);
 
