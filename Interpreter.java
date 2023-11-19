@@ -69,7 +69,7 @@ public class Interpreter {
               "Tried to use " + token.VALUE + " before it had a value");
 
         statement.set(i, identifier);
-        log(statement.get(i) + " replaced with " + token);
+        log(token + " replaced with " + statement.get(i));
       }
     }
   }
@@ -218,6 +218,9 @@ public class Interpreter {
           throw new UnexpectedTokenException("Unexpected token " + token);
       }
     }
+
+    // If the expression is only one element, there is nothing to evaluate
+    if (expr.size() == 1) return;
 
     // We define a custom TypedNumericValue class here. This class has type information for
     // constants as well as provides the operations that we need while additionally doing proper
@@ -476,8 +479,8 @@ public class Interpreter {
     String filename = args[0];
     File file = new File(filename);
 
-    // Interpreter interpreter = new Interpreter(file, true);
-    Interpreter interpreter = new Interpreter(file);
+    Interpreter interpreter = new Interpreter(file, true);
+    // Interpreter interpreter = new Interpreter(file);
     interpreter.execute();
   }
 }
