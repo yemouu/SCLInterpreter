@@ -21,9 +21,7 @@ public class Token {
       throws UnexpectedTokenException {
     if (!expect(expectedType, token))
       throw new UnexpectedTokenException(
-          String.format(
-              "Expected token with type %s, got token with type %s and value %s",
-              expectedType, token.TYPE, token.VALUE));
+          String.format("Expected token with type %s, got %s", expectedType, token));
   }
 
   public static void expectOrError(TokenType expectedType, String expectedValue, Token token)
@@ -31,8 +29,8 @@ public class Token {
     if (!expect(expectedType, expectedValue, token))
       throw new UnexpectedTokenException(
           String.format(
-              "Expected token with type %s and value %s, got a token with type %s and value %s",
-              expectedType, expectedValue, token.TYPE, token.VALUE));
+              "Expected token with type %s and value %s, got token %s",
+              expectedType, expectedValue, token));
   }
 
   public String toString() {

@@ -15,8 +15,7 @@ public abstract class TypedValue {
         if (SCLByte.isSCLByte(token.VALUE)) return new SCLByte(token.VALUE);
         else return new SCLUnsignedInteger(token.VALUE);
       default:
-        throw new UnexpectedTokenException(
-            "Expected a token of type literal or constant, got " + token);
+        throw new UnexpectedTokenException("Unexpected token, " + token);
     }
   }
 
