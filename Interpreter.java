@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-// TODO: Reduce use of "magic" numbers
 public class Interpreter {
   private final List<List<Token>> statements;
   private int index = -1;
@@ -63,11 +62,9 @@ public class Interpreter {
           break;
         default:
           throw new UnexpectedTokenException(
-              "Unexpected token with type "
-                  + startToken.TYPE
-                  + " and value "
-                  + startToken.VALUE
-                  + ". Was expecting either import, symbol, global, or implementations");
+              "Unexpected token "
+                  + startToken
+                  + ", was expecting either import, symbol, global, or implementations");
       }
     }
 
@@ -121,6 +118,8 @@ public class Interpreter {
     log("Defining symbol " + identifier.VALUE + " with value " + value.VALUE);
   }
 
+  // TODO: Investigate modifying the original list of statements rather than cloning it
+  // TODO: Return a TypedNumericValue instead of a Token
   private Token evaluateExpression(List<Token> expression) {
     // Go through the entire expression and take note of the position of each opening and closing
     // parenthesis.
@@ -129,26 +128,20 @@ public class Interpreter {
 
     for (int i = 0; i < expression.size(); i++) {
       Token token = expression.get(i);
-      if (token.TYPE == TokenType.SPECIAL_SYMBOL && token.VALUE.equals("(")) openIndexs.add(i);
-      else if (token.TYPE == TokenType.SPECIAL_SYMBOL && token.VALUE.equals(")"))
-        closeIndexs.add(i);
+      if (Token.expect(TokenType.SPECIAL_SYMBOL, "(", token)) openIndexs.add(i);
+      else if (Token.expect(TokenType.SPECIAL_SYMBOL, ")", token)) closeIndexs.add(i);
     }
 
     // Check if each parenthesis has a matching pair.
     if (openIndexs.size() != closeIndexs.size())
-      throw new UnmatchedToken("Found a '(' without a matching ')'");
+      throw new UnmatchedToken(
+          "There is an uneven amount of opening, '(', and closing, ')', parenthesis.");
 
-    // TODO: fix this for the case that multiple parenthesis pairs are in the same expression. How
-    // this currently works, as we replace each evaluated expression with a single token, the rest
-    // of the closing parenthesis will have their index shift causing us errors.
-    // Optionally, we could consider nested  () as out of scope.
     while (openIndexs.size() != 0) {
       List<Token> subExpression =
           expression.subList(openIndexs.get(openIndexs.size() - 1), closeIndexs.get(0) + 1);
 
-      // Note: this should be a good bandaid for the above todo, this still needs to be tested
-      // however.
-      int indexShift = (closeIndexs.get(0) + 1) - openIndexs.get(openIndexs.size() - 1);
+      int indexShift = (closeIndexs.get(0)) - openIndexs.get(openIndexs.size() - 1);
       for (int i = 0; i < closeIndexs.size(); i++)
         closeIndexs.set(i, closeIndexs.get(i) - indexShift);
 
@@ -173,8 +166,7 @@ public class Interpreter {
         case CONSTANT:
           continue;
         default:
-          throw new UnexpectedTokenException(
-              "Unexpected token of type " + token.TYPE + " and value " + token.VALUE);
+          throw new UnexpectedTokenException("Unexpected token " + token);
       }
     }
 
@@ -191,6 +183,7 @@ public class Interpreter {
     TypedNumericValue returnTypedValue;
     Token firstToken = expression.get(0);
 
+    // TODO: find a more elegant way to do this
     if (Token.expect(TokenType.OPERATOR, "negate", firstToken)) {
       Token secondToken = expression.get(1);
       if (Token.expect(TokenType.IDENTIFIER, secondToken))
@@ -247,6 +240,7 @@ public class Interpreter {
     return returnTypedValue.toToken();
   }
 
+  // TODO: This can most likely be squashed into the previous function
   private Token evaluateParenthesis(List<Token> expression) {
     // Remove the ( )
     expression.remove(expression.size() - 1);
@@ -272,6 +266,7 @@ public class Interpreter {
     }
   }
 
+  // TODO: This could likely be cleaner
   private void define(List<Token> statement) {
     log("Processing define");
     Token identifier = statement.get(1);
@@ -298,16 +293,13 @@ public class Interpreter {
 
   private void implementations(List<Token> statement) {
     log("Processing implementations");
-    // We currently only check for one function when there could be multiple
+    // TODO: We currently only check for one function when there could be multiple
     function(getNextStatement());
   }
 
   private void function(List<Token> statement) {
     log("Processing function");
 
-    // TODO: create a helper function to add identifiers to the identifier list.
-    // Currently we could accidentially define the same identifier twice. This should be prevented
-    // by the parser but it wouldn't hurt to do the check in both places.
     Token identifier = statement.get(1);
     TypedValue typedValue = new SCLSubprogram(Integer.toString(subprograms.size()));
 
@@ -322,6 +314,7 @@ public class Interpreter {
   private void begin(List<Token> statement) {
     log("Processing begin");
 
+    // TODO: peek the next statement instead of consuming immediately
     List<Token> nextStatement = getNextStatement();
     while (nextStatement.get(0).VALUE.equals("endfun")
         || nextStatement.get(0).VALUE.equals("set")
@@ -389,6 +382,7 @@ public class Interpreter {
     log("set identifier " + identifier.VALUE + " to value " + typedValue);
   }
 
+  // TODO: Consider just modifying the statement list instead of copying
   private void display(List<Token> statement) {
     log("Processing display");
     // Clone the statements so we can modify it to make displaying its contents easier.

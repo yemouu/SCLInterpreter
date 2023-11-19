@@ -392,7 +392,8 @@ public class Parser {
       return;
     }
 
-    // If our special symbol is (, we expect either a constant, or identifier.
+    // If our special symbol is (, we expect either a constant, operator, special_symbol, or
+    // identifier.
     if (Token.expect(TokenType.SPECIAL_SYMBOL, "(", token)) {
       log("Expecting constant or identifier");
 
@@ -401,6 +402,12 @@ public class Parser {
       switch (nextToken.TYPE) {
         case CONSTANT:
           constant(getNextToken());
+          break;
+        case OPERATOR:
+          operator(getNextToken());
+          break;
+        case SPECIAL_SYMBOL:
+          special_symbol(getNextToken());
           break;
         case IDENTIFIER:
           identifier(getNextToken());
@@ -412,7 +419,8 @@ public class Parser {
       return;
     }
 
-    // If our special symbol is ), we expect either a constant, identifier, or end of statement.
+    // If our special symbol is ), we expect either a constant, identifier, operator,
+    // special_symbol, or end of statement.
     if (Token.expect(TokenType.SPECIAL_SYMBOL, ")", token)) {
       log("Expecting constant, identifier, or end of statement");
 
@@ -424,6 +432,12 @@ public class Parser {
           break;
         case IDENTIFIER:
           identifier(getNextToken());
+          break;
+        case OPERATOR:
+          operator(getNextToken());
+          break;
+        case SPECIAL_SYMBOL:
+          special_symbol(getNextToken());
           break;
         case END_OF_STATEMENT:
           endOfStatement(getNextToken());
