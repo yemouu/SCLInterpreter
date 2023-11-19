@@ -87,7 +87,7 @@ public class Parser {
   private void start() {
     Token nextToken = getNextToken();
 
-    log("Next token is of type " + nextToken.TYPE + " and value " + nextToken.VALUE);
+    log("Next token is " + nextToken);
     Token.expectOrError(TokenType.KEYWORD, nextToken);
 
     switch (nextToken.VALUE) {
@@ -104,16 +104,14 @@ public class Parser {
         implementation(nextToken);
         break;
       default:
-        throw new UnexpectedTokenException(
-            String.format(
-                "Unexpected token with type %s and value %s", nextToken.TYPE, nextToken.VALUE));
+        throw new UnexpectedTokenException("Unexpected token, " + nextToken);
     }
   }
 
   // Simple method that logs when a token is found. This helps standardize these kinds of messages
   // so that we don't have to change this in multiple places.
   private void foundToken(Token token) {
-    log(String.format("Found a token with type %s and value %s", token.TYPE, token.VALUE));
+    log("Found token, " + token);
     statementBuilder.add(token);
   }
 
@@ -124,7 +122,7 @@ public class Parser {
   // own token and then look to call another function that makes sense to call based on its own
   // token.
   private void _import(Token token) {
-    log("Entering imports");
+    log("Entering import");
     Token.expectOrError(TokenType.KEYWORD, "import", token);
     foundToken(token);
 
@@ -144,7 +142,7 @@ public class Parser {
 
     // If our previous token was the import token, we can end this statement and method here.
     if (Token.expect(TokenType.KEYWORD, "import", prevToken)) {
-      log("Previous token was keyword:import, expecting end of statement");
+      log("Previous token was " + prevToken + ", expecting end of statement");
       endOfStatement(getNextToken());
       return;
     }
@@ -180,7 +178,7 @@ public class Parser {
 
   // Parse the symbol keyword
   private void symbol(Token token) {
-    log("Entering symbols");
+    log("Entering symbol");
     Token.expectOrError(TokenType.KEYWORD, "symbol", token);
     foundToken(token);
 
@@ -190,7 +188,7 @@ public class Parser {
 
   // Parse the identifier token
   private void identifier(Token token) {
-    log("Entering identifiers");
+    log("Entering identifier");
     Token.expectOrError(TokenType.IDENTIFIER, token);
     foundToken(token);
 
@@ -207,14 +205,13 @@ public class Parser {
         || Token.expect(TokenType.KEYWORD, "symbol", prevToken)
         || Token.expect(TokenType.KEYWORD, "function", prevToken)) {
       if (identifiers.contains(token.VALUE))
-        throw new IdentifierAleadyDefinedException(
-            "Identifier " + token.VALUE + "  was already defined");
+        throw new IdentifierAleadyDefinedException(token + "  was already defined");
 
       identifiers.add(token.VALUE);
-      log("New identifier " + token.VALUE + "was added to identifiers list");
+      log("New identifier, " + token.VALUE + ", was added to identifiers list");
     } else if (!identifiers.contains(token.VALUE))
       throw new IdentifierNotDefinedException(
-          "Tried accessing identifier " + token.VALUE + " but it was not defined yet");
+          "Tried accessing " + token + " but it was not defined yet");
 
     // If we have endfun as our previous keyword, our next token should be end of statement
     if (Token.expect(TokenType.KEYWORD, "endfun", prevToken)) {
@@ -251,7 +248,7 @@ public class Parser {
 
   // Parse constant token
   private void constant(Token token) {
-    log("Entering constants");
+    log("Entering constant");
     Token.expectOrError(TokenType.CONSTANT, token);
     foundToken(token);
 
@@ -303,9 +300,7 @@ public class Parser {
           special_symbol(nextToken);
           break;
         default:
-          throw new UnexpectedTokenException(
-              String.format(
-                  "Unexpected token with type %s and value %s", nextToken.TYPE, nextToken.VALUE));
+          throw new UnexpectedTokenException("Unexpected token, " + nextToken);
       }
       return;
     }
@@ -316,8 +311,7 @@ public class Parser {
       Token prevToken = peekPrevToken();
       if (!Token.expect(TokenType.OPERATOR, "=", prevToken)
           && !Token.expect(TokenType.SPECIAL_SYMBOL, "(", prevToken))
-        throw new UnexpectedTokenException(
-            "Expected either OPERATOR:= or SPECIAL_SYMBOL:(, got " + prevToken);
+        throw new UnexpectedTokenException("Expected either = or (, got " + prevToken.VALUE);
 
       log("Expecting a literal, constant, identifier, operator, or special_symbol");
       Token nextToken = getNextToken();
@@ -332,9 +326,7 @@ public class Parser {
           special_symbol(nextToken);
           break;
         default:
-          throw new UnexpectedTokenException(
-              String.format(
-                  "Unexpected token with type %s and value %s", nextToken.TYPE, nextToken.VALUE));
+          throw new UnexpectedTokenException("Unexpected token, " + nextToken);
       }
       return;
     }
@@ -356,9 +348,7 @@ public class Parser {
         special_symbol(nextToken);
         break;
       default:
-        throw new UnexpectedTokenException(
-            String.format(
-                "Unexpected token with type %s and value %s", nextToken.TYPE, nextToken.VALUE));
+        throw new UnexpectedTokenException("Unexpected token, " + nextToken);
     }
   }
 
@@ -385,8 +375,7 @@ public class Parser {
           identifier(getNextToken());
           break;
         default:
-          throw new UnexpectedTokenException(
-              "Expected either literal, constant, or identifier, got" + nextToken);
+          throw new UnexpectedTokenException("Unexpected token, " + nextToken);
       }
       return;
     }
@@ -412,8 +401,7 @@ public class Parser {
           identifier(getNextToken());
           break;
         default:
-          throw new UnexpectedTokenException(
-              "Expected either literal, constant, or identifier, got" + nextToken);
+          throw new UnexpectedTokenException("Unexpected token, " + nextToken);
       }
       return;
     }
@@ -442,8 +430,7 @@ public class Parser {
           endOfStatement(getNextToken());
           break;
         default:
-          throw new UnexpectedTokenException(
-              "Expected either literal, constant, or identifier, got" + nextToken);
+          throw new UnexpectedTokenException("Unexpected token, " + nextToken);
       }
       return;
     }
@@ -451,7 +438,7 @@ public class Parser {
 
   // Parse global keyword
   private void global(Token token) {
-    log("Entering globals");
+    log("Entering global");
     Token.expectOrError(TokenType.KEYWORD, "global", token);
     foundToken(token);
 
@@ -488,11 +475,12 @@ public class Parser {
     // Continuously parse the next token until we reach a token that indicates that we are done. In
     // this case, either the implementations keyword or the begin keyword.
     Token nextToken = peekNextToken();
-    while (nextToken != null
-        && !Token.expect(TokenType.KEYWORD, "implementations", nextToken)
+    while (!Token.expect(TokenType.KEYWORD, "implementations", nextToken)
         && !Token.expect(TokenType.KEYWORD, "begin", nextToken)) {
       define(getNextToken());
+
       nextToken = peekNextToken();
+      if (nextToken == null) break;
     }
   }
 
@@ -546,9 +534,7 @@ public class Parser {
         _byte(nextToken);
         break;
       default:
-        throw new UnexpectedTokenException(
-            String.format(
-                "Unexpected token with type %s and value %s", nextToken.TYPE, nextToken.VALUE));
+        throw new UnexpectedTokenException("Unexpected token, " + nextToken);
     }
   }
 
@@ -572,9 +558,7 @@ public class Parser {
         _long(nextToken);
         break;
       default:
-        throw new UnexpectedTokenException(
-            String.format(
-                "Unexpected token with type %s and value %s", nextToken.TYPE, nextToken.VALUE));
+        throw new UnexpectedTokenException("Unexpected token, " + nextToken);
     }
   }
 
@@ -633,7 +617,7 @@ public class Parser {
     Token nextToken = peekNextToken();
     while (peekNextToken() != null) {
       if (Token.expect(TokenType.KEYWORD, "function", nextToken)) function(getNextToken());
-      else throw new UnexpectedTokenException("Expected function keyword but got, " + nextToken);
+      else throw new UnexpectedTokenException("Unexpected token, " + nextToken);
     }
   }
 
@@ -683,6 +667,7 @@ public class Parser {
 
     log("Back in begin");
     log("Expecting either set, display, or exit");
+
     // Continuously parse the next token until we reach a token that indicates that we are done. In
     // this case, the endfun keyword.
     Token nextToken = peekNextToken();
@@ -698,9 +683,7 @@ public class Parser {
           exit(getNextToken());
           break;
         default:
-          throw new UnexpectedTokenException(
-              String.format(
-                  "Unexpected token with type %s and value %s", nextToken.TYPE, nextToken.VALUE));
+          throw new UnexpectedTokenException("Expected function keyword but got, " + nextToken);
       }
 
       nextToken = peekNextToken();
@@ -734,9 +717,7 @@ public class Parser {
         literal(nextToken);
         break;
       default:
-        throw new UnexpectedTokenException(
-            String.format(
-                "Unexpected token with type %s and value %s", nextToken.TYPE, nextToken.VALUE));
+        throw new UnexpectedTokenException("Expected function keyword but got, " + nextToken);
     }
   }
 
