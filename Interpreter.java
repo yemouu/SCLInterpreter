@@ -42,6 +42,21 @@ public class Interpreter {
     else throw new NotImplementedException();
   }
 
+  // NOTE: doesn't account for subprograms
+  private void replaceIdentifiers(List<Token> statement) {
+    for (int i = 0; i < statement.size(); i++) {
+      Token token = statement.get(i);
+      if (Token.expect(TokenType.IDENTIFIER, token)) {
+        Token identifier = identifiers.get(token.VALUE).toToken();
+        if (identifier.VALUE == null)
+          throw new TypeMismatchException("Tried to use " + token.VALUE + " before it had avalue");
+
+        statement.set(i, identifier);
+        log(statement.get(i) + " replaced with " + token);
+      }
+    }
+  }
+
   public void execute() {
     while (peekNextStatement() != null) {
       List<Token> statement = getNextStatement();
@@ -89,6 +104,10 @@ public class Interpreter {
     Token module = statement.get(1);
 
     // There isn't any actual modules for us to import
+    // If we were to actually implement this, we would need to make sure that the module is a file,
+    // and that we can parse it. The module would need to be parsed, and interpreted and the results
+    // of that interpretation would need to be given back to us to use while interpreting this file
+
     log("importing " + module.VALUE);
   }
 
@@ -102,65 +121,58 @@ public class Interpreter {
     if (identifiers.containsKey(identifier.VALUE))
       throw new TypeMismatchException("Tried defining " + identifier.VALUE + " twice");
 
-    Token value;
-    if (statement.size() > 4)
-      value = evaluateExpression(new ArrayList<>(statement.subList(2, statement.size() - 1)));
-    else value = statement.get(2);
+    replaceIdentifiers(statement.subList(2, statement.size() - 1));
+    evaluateExpr(statement.subList(2, statement.size() - 1));
 
-    // Create a TypedValue using the token's type and value information
-    TypedValue typedValue;
-    if (value.TYPE == TokenType.LITERAL) typedValue = new SCLString(value.VALUE);
-    else if (SCLByte.isSCLByte(value.VALUE)) typedValue = new SCLByte(value.VALUE);
-    // We can't differentiate between unsigned and signed ints, shorts, or longs at this stage
-    else typedValue = new SCLUnsignedInteger(value.VALUE);
+    TypedValue value = TypedValue.toTypedValue(statement.get(2));
+    identifiers.put(identifier.VALUE, value);
 
-    // Add TypedValue to identifiers hashmap
-    identifiers.put(identifier.VALUE, typedValue);
-
-    log("Defining symbol " + identifier.VALUE + " with value " + value.VALUE);
+    log("Defining symbol " + identifier + " with value " + value);
   }
 
-  // TODO: Investigate modifying the original list of statements rather than cloning it
-  // TODO: Return a TypedNumericValue instead of a Token
-  private Token evaluateExpression(List<Token> expression) {
+  private void evaluateExpr(List<Token> expr) {
     // Go through the entire expression and take note of the position of each opening and closing
     // parenthesis.
-    List<Integer> openIndexs = new ArrayList<>();
-    List<Integer> closeIndexs = new ArrayList<>();
-
-    for (int i = 0; i < expression.size(); i++) {
-      Token token = expression.get(i);
-      if (Token.expect(TokenType.SPECIAL_SYMBOL, "(", token)) openIndexs.add(i);
-      else if (Token.expect(TokenType.SPECIAL_SYMBOL, ")", token)) closeIndexs.add(i);
+    List<Integer> start = new ArrayList<>();
+    List<Integer> end = new ArrayList<>();
+    for (int i = 0; i < expr.size(); i++) {
+      Token token = expr.get(i);
+      if (Token.expect(TokenType.SPECIAL_SYMBOL, "(", token)) start.add(i);
+      else if (Token.expect(TokenType.SPECIAL_SYMBOL, ")", token)) end.add(i);
     }
 
     // Check if each parenthesis has a matching pair.
-    if (openIndexs.size() != closeIndexs.size())
+    if (start.size() != end.size())
       throw new UnmatchedTokenException("Uneven amount of opening and closing parenthesis.");
 
-    while (openIndexs.size() != 0) {
-      List<Token> subExpression =
-          expression.subList(openIndexs.get(openIndexs.size() - 1), closeIndexs.get(0) + 1);
+    while (start.size() != 0) {
+      List<Token> subExpr = expr.subList(start.get(start.size() - 1), end.get(0) + 1);
 
-      int indexShift = (closeIndexs.get(0)) - openIndexs.get(openIndexs.size() - 1);
-      for (int i = 0; i < closeIndexs.size(); i++)
-        closeIndexs.set(i, closeIndexs.get(i) - indexShift);
+      int shift = end.get(0) - start.get(start.size() - 1);
+      for (int i = 0; i < end.size(); i++) end.set(i, end.get(i) - shift);
 
-      Token parenthesisValue = evaluateParenthesis(new ArrayList<>(subExpression));
-      subExpression.clear();
-      subExpression.add(parenthesisValue);
-      openIndexs.remove(openIndexs.size() - 1);
-      closeIndexs.remove(0);
+      evaluateGroup(subExpr);
+      start.remove(start.size() - 1);
+      end.remove(0);
     }
 
     // We should now have a flat expression that we can evaluate
-    return evaluate(expression);
+    evaluate(expr);
   }
 
-  private Token evaluate(List<Token> expression) {
+  private void evaluateGroup(List<Token> expr) {
+    // Remove the ( )
+    expr.remove(expr.size() - 1);
+    expr.remove(0);
+
+    evaluate(expr);
+  }
+
+  // private Token evaluate(List<Token> expression) {
+  private void evaluate(List<Token> expr) {
     // Sanity check for the correct tokens within the expression
-    for (int i = 0; i < expression.size(); i++) {
-      Token token = expression.get(i);
+    for (int i = 0; i < expr.size(); i++) {
+      Token token = expr.get(i);
       switch (token.TYPE) {
         case IDENTIFIER:
         case OPERATOR:
@@ -172,82 +184,50 @@ public class Interpreter {
     }
 
     // NOTE: The only operators we accept right now are = and the bitwise operators band, bor, bxor,
-    // negate, lshift, and rshift. All of these operators except for negate take in 2 operands.
-    // For the sake of simplicity, we expect that each expression that comes through here will only
-    // consist of 2 values and one operator. We do not support <value> band <value> band <value>. If
-    // you wanted to express this expression while using our interpreter, you would need to use ( )
-    // to separate operations. e.g. (<value> band <value>) band <value>
+    //       negate, lshift, and rshift. All of these operators except for negate take in 2
+    //       operands. For the sake of simplicity, we expect that each expression that comes through
+    //       here will only consist of 2 values and one operator. We do not support <value> band
+    //       <value> band <value>. If you wanted to express this expression while using our
+    //       interpreter, you would need to use ( ) to separate operations. e.g. (<value> band
+    //       <value>) band <value>
 
-    // Our expression could have been resolved to a single token after handling parenthesis
-    if (expression.size() == 1) return expression.get(0);
+    if (expr.size() == 1) return;
 
-    TypedNumericValue returnTypedValue;
-    Token firstToken = expression.get(0);
+    TypedNumericValue result;
+    Token first = expr.get(0);
 
-    // TODO: find a more elegant way to do this
-    if (Token.expect(TokenType.OPERATOR, "negate", firstToken)) {
-      Token secondToken = expression.get(1);
-      if (Token.expect(TokenType.IDENTIFIER, secondToken))
-        returnTypedValue = ((TypedNumericValue) identifiers.get(secondToken.VALUE)).negate();
-      else if (Token.expect(TokenType.CONSTANT, secondToken))
-        if (SCLByte.isSCLByte(secondToken.VALUE))
-          returnTypedValue = new SCLByte(secondToken.VALUE).negate();
-        else returnTypedValue = new SCLUnsignedInteger(secondToken.VALUE).negate();
-      else
-        throw new UnexpectedTokenException(
-            "Expected a token with type constant, got " + secondToken);
-    } else {
-      TypedNumericValue lhs;
-      TypedNumericValue rhs;
+    if (Token.expect(TokenType.OPERATOR, "negate", first))
+      result = ((TypedNumericValue) TypedValue.toTypedValue(expr.get(1))).negate();
+    else {
+      TypedNumericValue lhs = (TypedNumericValue) TypedValue.toTypedValue(first);
+      TypedNumericValue rhs = (TypedNumericValue) TypedValue.toTypedValue(expr.get(2));
 
-      if (Token.expect(TokenType.IDENTIFIER, firstToken))
-        lhs = (TypedNumericValue) identifiers.get(firstToken.VALUE);
-      else {
-        if (SCLByte.isSCLByte(firstToken.VALUE)) lhs = new SCLByte(firstToken.VALUE);
-        else lhs = new SCLUnsignedInteger(firstToken.VALUE);
-      }
-
-      Token thirdToken = expression.get(2);
-      if (Token.expect(TokenType.IDENTIFIER, thirdToken))
-        rhs = (TypedNumericValue) identifiers.get(thirdToken.VALUE);
-      else {
-        if (SCLByte.isSCLByte(thirdToken.VALUE)) rhs = new SCLByte(thirdToken.VALUE);
-        else rhs = new SCLUnsignedInteger(thirdToken.VALUE);
-      }
-
-      Token secondToken = expression.get(1);
-      switch (secondToken.VALUE) {
+      Token second = expr.get(1);
+      Token.expectOrError(TokenType.OPERATOR, second);
+      switch (second.VALUE) {
         case "band":
-          returnTypedValue = lhs.bitwiseAnd(rhs);
+          result = lhs.bitwiseAnd(rhs);
           break;
         case "bor":
-          returnTypedValue = lhs.bitwiseOr(rhs);
+          result = lhs.bitwiseOr(rhs);
           break;
         case "bxor":
-          returnTypedValue = lhs.bitwiseXor(rhs);
+          result = lhs.bitwiseXor(rhs);
           break;
         case "lshift":
-          returnTypedValue = lhs.leftShift(rhs);
+          result = lhs.leftShift(rhs);
           break;
         case "rshift":
-          returnTypedValue = lhs.rightShift(rhs);
+          result = lhs.rightShift(rhs);
           break;
         default:
           throw new UnexpectedTokenException(
-              "Expected either band, bor, bxor, lshift, or rshift, got " + secondToken);
+              "Expected either band, bor, bxor, lshift, or rshift, got " + second);
       }
     }
 
-    return returnTypedValue.toToken();
-  }
-
-  // TODO: This can most likely be squashed into the previous function
-  private Token evaluateParenthesis(List<Token> expression) {
-    // Remove the ( )
-    expression.remove(expression.size() - 1);
-    expression.remove(0);
-
-    return evaluate(expression);
+    expr.clear();
+    expr.add(result.toToken());
   }
 
   // Global will be managing multiple statements so it will return its
@@ -260,23 +240,23 @@ public class Interpreter {
     log("Processing variables");
 
     List<Token> nextStatement = peekNextStatement();
-    while (nextStatement != null && nextStatement.get(0).VALUE.equals("define")) {
-      List<Token> stmt = getNextStatement();
-      define(stmt);
+    while (nextStatement.get(0).VALUE.equals("define")) {
+      define(getNextStatement());
+
       nextStatement = peekNextStatement();
+      if (nextStatement == null) break;
     }
   }
 
-  // TODO: This could likely be cleaner
   private void define(List<Token> statement) {
     log("Processing define");
     Token identifier = statement.get(1);
 
-    String type;
     if (identifiers.containsKey(identifier.VALUE))
       throw new TypeMismatchException("Tried defining " + identifier.VALUE + " twice");
 
     // Some types are a combination of two tokens (e.g. unsigned integer)
+    String type;
     if (statement.size() > 6) {
       type = "";
       for (int i = 4; i < statement.size() - 1; i++) {
@@ -291,13 +271,13 @@ public class Interpreter {
     else typedValue = new SCLUnsignedInteger(null);
 
     identifiers.put(identifier.VALUE, typedValue);
-
     log("Defining variable " + identifier.VALUE + " with type " + type);
   }
 
   private void implementations(List<Token> statement) {
     log("Processing implementations");
-    // TODO: We currently only check for one function when there could be multiple
+    // NOTE: Our parser supports multiple subprogram but our interpreter is only capable of running
+    //       the subprogram main
     function(getNextStatement());
   }
 
@@ -308,8 +288,7 @@ public class Interpreter {
     TypedValue typedValue = new SCLSubprogram(Integer.toString(subprograms.size()));
 
     identifiers.put(identifier.VALUE, typedValue);
-
-    log("Defining subprogram " + identifier.VALUE + " with address " + typedValue.VALUE);
+    log("Defining " + identifier + " with " + typedValue);
 
     variables(getNextStatement());
     begin(getNextStatement());
@@ -318,13 +297,13 @@ public class Interpreter {
   private void begin(List<Token> statement) {
     log("Processing begin");
 
-    // TODO: peek the next statement instead of consuming immediately
-    List<Token> nextStatement = getNextStatement();
-    while (nextStatement.get(0).VALUE.equals("endfun")
-        || nextStatement.get(0).VALUE.equals("set")
-        || nextStatement.get(0).VALUE.equals("exit")
-        || nextStatement.get(0).VALUE.equals("display")) {
+    List<Token> nextStatement = peekNextStatement();
+    while (Token.expect(TokenType.KEYWORD, "endfun", nextStatement.get(0))
+        || Token.expect(TokenType.KEYWORD, "set", nextStatement.get(0))
+        || Token.expect(TokenType.KEYWORD, "exit", nextStatement.get(0))
+        || Token.expect(TokenType.KEYWORD, "display", nextStatement.get(0))) {
 
+      nextStatement = getNextStatement();
       switch (nextStatement.get(0).VALUE) {
         case "display":
         case "exit":
@@ -341,8 +320,8 @@ public class Interpreter {
           break;
       }
 
-      if (peekNextStatement() == null) break;
-      nextStatement = getNextStatement();
+      nextStatement = peekNextStatement();
+      if (nextStatement == null) break;
     }
   }
 
@@ -350,77 +329,69 @@ public class Interpreter {
     log("Processing set");
 
     Token identifier = statement.get(1);
-    TypedValue typedValue = identifiers.get(identifier.VALUE);
-    if (typedValue == null)
-      throw new VariableNotYetDefined(
+    TypedValue originalValue = identifiers.get(identifier.VALUE);
+    if (originalValue == null)
+      throw new VariableNotDefinedException(
           "Tried to assign value to " + identifier.VALUE + " but it was not defined yet.");
 
-    // TODO: throw an error if there is a type mismatch between strings and other types
-    // TODO: this is ugly consider having a Token to TypedValue conversion function
-    if (statement.size() == 5) {
-      Token value = statement.get(3);
-      if (value.TYPE == TokenType.IDENTIFIER) {
-        TypedValue newValue = identifiers.get(value.VALUE);
-        if (typedValue.TYPE == SCLTypes.STRING) typedValue = new SCLString(newValue.VALUE);
-        else if (typedValue.TYPE == SCLTypes.BYTE)
-          if (newValue.TYPE == SCLTypes.UNSIGNED_INTEGER)
-            typedValue = ((SCLUnsignedInteger) newValue).toSCLByte();
-          else typedValue = new SCLByte(newValue.VALUE);
-        else if (newValue.TYPE == SCLTypes.BYTE)
-          typedValue = ((SCLByte) newValue).toSCLUnsignedInteger();
-        else typedValue = new SCLUnsignedInteger(newValue.VALUE);
-        // Need to check the type of the raw value itself as well.
-      } else if (typedValue.TYPE == SCLTypes.STRING) typedValue = new SCLString(value.VALUE);
-      else if (typedValue.TYPE == SCLTypes.BYTE) typedValue = new SCLByte(value.VALUE);
-      else typedValue = new SCLUnsignedInteger(value.VALUE);
-    } else {
-      Token value = evaluateExpression(new ArrayList<>(statement.subList(3, statement.size() - 1)));
+    replaceIdentifiers(statement.subList(3, statement.size() - 1));
+    evaluateExpr(statement.subList(3, statement.size() - 1));
 
-      if (typedValue.TYPE == SCLTypes.STRING) typedValue = new SCLString(value.VALUE);
-      else if (typedValue.TYPE == SCLTypes.BYTE) typedValue = new SCLByte(value.VALUE);
-      else typedValue = new SCLUnsignedInteger(value.VALUE);
+    TypedValue newValue = TypedValue.toTypedValue(statement.get(3));
+
+    switch (originalValue.TYPE) {
+      case STRING:
+        if (newValue.TYPE != originalValue.TYPE)
+          throw new TypeMismatchException("Tried assigning " + newValue + " to " + originalValue);
+        originalValue = new SCLString(newValue.VALUE);
+        break;
+      case BYTE:
+        if (newValue.TYPE != originalValue.TYPE)
+          originalValue = ((SCLUnsignedInteger) newValue).toSCLByte();
+        else originalValue = new SCLByte(newValue.VALUE);
+        break;
+      case UNSIGNED_INTEGER:
+        if (newValue.TYPE != originalValue.TYPE)
+          originalValue = ((SCLByte) newValue).toSCLUnsignedInteger();
+        else originalValue = new SCLUnsignedInteger(newValue.VALUE);
+        break;
+      default:
+        throw new NotImplementedException();
     }
 
-    identifiers.replace(identifier.VALUE, typedValue);
+    identifiers.replace(identifier.VALUE, originalValue);
 
-    log("set identifier " + identifier.VALUE + " to value " + typedValue);
+    log("set identifier " + identifier.VALUE + " to value " + originalValue);
   }
 
-  // TODO: Consider just modifying the statement list instead of copying
   private void display(List<Token> statement) {
     log("Processing display");
-    // Clone the statements so we can modify it to make displaying its contents easier.
-    List<Token> statementCopy = new ArrayList<>(statement);
-
     // Remove the end of statement token
-    statementCopy.remove(statementCopy.size() - 1);
+    statement.remove(statement.size() - 1);
 
     // Remove the display keyword
-    statementCopy.remove(0);
+    statement.remove(0);
+
+    // Replace all identifiers
+    replaceIdentifiers(statement);
 
     // This current method currently doesn't allow us to evaluate expressions before printing them.
     // The user would need to put the expression into a variable.
-    for (Token token : statementCopy) {
+    for (Token token : statement) {
       switch (token.TYPE) {
-        case IDENTIFIER:
-          System.out.print(identifiers.get(token.VALUE).VALUE);
-          break;
         case LITERAL:
-          // We need to remove the extra quotes
-          // We may also need to correctly display escaped characters
+          // NOTE: Doesn't handle escape sequences. Not necessary for our test file.
           System.out.print(token.VALUE.substring(1, token.VALUE.length() - 1));
-          // System.out.print(token.VALUE);
           break;
         case CONSTANT:
           System.out.print(token.VALUE);
           break;
         case SPECIAL_SYMBOL:
+          Token.expectOrError(TokenType.SPECIAL_SYMBOL, ",", token);
           continue;
         default:
           throw new UnexpectedTokenException(
-              "Unxpected token "
-                  + token.TYPE
-                  + ", expected either identifier, literal, constant, or special_symbol");
+              "Unxpected " + token + ", expected either literal, constant, or special_symbol");
       }
     }
 

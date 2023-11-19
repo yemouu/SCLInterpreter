@@ -11,6 +11,7 @@ variables
    define a of type unsigned integer
    define b of type unsigned short
    define c of type unsigned long
+   define d of type unsigned integer
 
    implementations
 
@@ -54,5 +55,18 @@ variables
       display "a: ", a
       set a = a bor d2   // copy d2 to low byte of a
       display "a: ", a
+
+      // Test nested parenthesis
+      set d = negate (23 bor 12)
+      display "d: ", d
+
+      set d = negate (23 bor (6 lshift 1))
+      display "d: ", d
+
+      set d = (negate (23 bor (6 lshift 1)))
+      display "d: ", d
+
+      set d = (negate (23 bor (6 lshift 1))) band a
+      display "d: ", d
       exit
   endfun main
