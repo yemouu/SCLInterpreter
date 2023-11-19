@@ -7,6 +7,19 @@ public abstract class TypedValue {
     this.VALUE = value;
   }
 
+  public static TypedValue toTypedValue(Token token) {
+    switch (token.TYPE) {
+      case LITERAL:
+        return new SCLString(token.VALUE);
+      case CONSTANT:
+        if (SCLByte.isSCLByte(token.VALUE)) return new SCLByte(token.VALUE);
+        else return new SCLUnsignedInteger(token.VALUE);
+      default:
+        throw new UnexpectedTokenException(
+            "Expected a token of type literal or constant, got " + token);
+    }
+  }
+
   public String toString() {
     return TYPE + ":" + VALUE;
   }
