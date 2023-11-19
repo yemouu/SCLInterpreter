@@ -39,7 +39,7 @@ public class Interpreter {
 
   private List<Token> getNextStatement() {
     if (index + 1 >= 0 && index + 1 < statements.size()) return statements.get(++index);
-    else throw new EndOfStatementsException();
+    else throw new NotImplementedException();
   }
 
   public void execute() {
@@ -83,7 +83,7 @@ public class Interpreter {
   private void _import(List<Token> statement) {
     log("Processing import");
     if (statement.size() != 3)
-      throw new UnexpectedNumberOfArguments(
+      throw new UnexpectedNumberOfArgumentsException(
           "Expecting 1 argument but got " + (statement.size() - 2));
 
     Token module = statement.get(1);
@@ -95,10 +95,12 @@ public class Interpreter {
   private void symbol(List<Token> statement) {
     log("Processing symbol");
     if (statement.size() < 4)
-      throw new UnexpectedNumberOfArguments(
+      throw new UnexpectedNumberOfArgumentsException(
           "Expecting atleast 2 arguments but got " + (statement.size() - 2));
 
     Token identifier = statement.get(1);
+    if (identifiers.containsKey(identifier.VALUE))
+      throw new TypeMismatchException("Tried defining " + identifier.VALUE + " twice");
 
     Token value;
     if (statement.size() > 4)
@@ -134,8 +136,7 @@ public class Interpreter {
 
     // Check if each parenthesis has a matching pair.
     if (openIndexs.size() != closeIndexs.size())
-      throw new UnmatchedToken(
-          "There is an uneven amount of opening, '(', and closing, ')', parenthesis.");
+      throw new UnmatchedTokenException("Uneven amount of opening and closing parenthesis.");
 
     while (openIndexs.size() != 0) {
       List<Token> subExpression =
@@ -272,6 +273,9 @@ public class Interpreter {
     Token identifier = statement.get(1);
 
     String type;
+    if (identifiers.containsKey(identifier.VALUE))
+      throw new TypeMismatchException("Tried defining " + identifier.VALUE + " twice");
+
     // Some types are a combination of two tokens (e.g. unsigned integer)
     if (statement.size() > 6) {
       type = "";
@@ -436,6 +440,9 @@ public class Interpreter {
           break;
         case "exit":
           return;
+        default:
+          throw new UnexpectedTokenException(
+              "Unxpected " + firstToken + ", expected either set, display, or exit");
       }
     }
   }

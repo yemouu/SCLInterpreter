@@ -6,7 +6,7 @@ public class SCLUnsignedInteger extends TypedNumericValue {
   // Convert unsigned integer to byte
   // This operation will cause a loss of percision
   public SCLByte toSCLByte() {
-    if (VALUE == null) throw new VariableNotYetDefined();
+    if (VALUE == null) throw new VariableNotDefinedException();
 
     String hexStr = Integer.toHexString(Integer.parseUnsignedInt(VALUE));
     if (hexStr.length() < 2) hexStr = "0" + hexStr;
@@ -15,7 +15,7 @@ public class SCLUnsignedInteger extends TypedNumericValue {
   }
 
   public TypedNumericValue bitwiseAnd(TypedNumericValue rightSide) {
-    if (VALUE == null || rightSide == null) throw new VariableNotYetDefined();
+    if (VALUE == null || rightSide == null) throw new VariableNotDefinedException();
 
     int lhs = Integer.parseUnsignedInt(VALUE);
 
@@ -31,7 +31,7 @@ public class SCLUnsignedInteger extends TypedNumericValue {
   }
 
   public TypedNumericValue bitwiseOr(TypedNumericValue rightSide) {
-    if (VALUE == null || rightSide == null) throw new VariableNotYetDefined();
+    if (VALUE == null || rightSide == null) throw new VariableNotDefinedException();
 
     int lhs = Integer.parseUnsignedInt(VALUE);
 
@@ -44,7 +44,7 @@ public class SCLUnsignedInteger extends TypedNumericValue {
   }
 
   public TypedNumericValue bitwiseXor(TypedNumericValue rightSide) {
-    if (VALUE == null || rightSide == null) throw new VariableNotYetDefined();
+    if (VALUE == null || rightSide == null) throw new VariableNotDefinedException();
 
     int lhs = Integer.parseUnsignedInt(VALUE);
 
@@ -57,7 +57,7 @@ public class SCLUnsignedInteger extends TypedNumericValue {
   }
 
   public TypedNumericValue leftShift(TypedNumericValue rightSide) {
-    if (VALUE == null || rightSide == null) throw new VariableNotYetDefined();
+    if (VALUE == null || rightSide == null) throw new VariableNotDefinedException();
 
     int lhs = Integer.parseUnsignedInt(VALUE);
 
@@ -70,14 +70,14 @@ public class SCLUnsignedInteger extends TypedNumericValue {
   }
 
   public TypedNumericValue negate() {
-    if (VALUE == null) throw new VariableNotYetDefined();
+    if (VALUE == null) throw new VariableNotDefinedException();
 
     int rawValue = Integer.parseUnsignedInt(VALUE);
     return new SCLUnsignedInteger(Integer.toUnsignedString(~rawValue));
   }
 
   public TypedNumericValue rightShift(TypedNumericValue rightSide) {
-    if (VALUE == null || rightSide == null) throw new VariableNotYetDefined();
+    if (VALUE == null || rightSide == null) throw new VariableNotDefinedException();
 
     int lhs = Integer.parseUnsignedInt(VALUE);
 
