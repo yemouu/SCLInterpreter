@@ -1,5 +1,4 @@
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,7 +40,7 @@ public class Parser {
 
   // "Consumes" the next token and returns it to the caller. If there is no next token, throws a
   // TokenNotFoundException.
-  public Token getNextToken() throws TokenNotFoundException {
+  public Token getNextToken() {
     if (index < tokens.size()) return tokens.get(++index);
     else throw new TokenNotFoundException();
   }
@@ -761,7 +760,7 @@ public class Parser {
     identifier(getNextToken());
   }
 
-  public static void main(String[] args) throws FileNotFoundException {
+  public static void main(String[] args) {
     if (args.length != 1) {
       System.err.println("Usage: java SCLScanner <filename>");
       return;
@@ -775,7 +774,11 @@ public class Parser {
 
     List<List<Token>> statements = parser.getStatements();
     for (List<Token> statement : statements) {
-      for (Token token : statement) System.out.print(token);
+      for (Token token : statement) {
+        if (Token.expect(TokenType.IDENTIFIER, token) || Token.expect(TokenType.CONSTANT, token))
+          System.out.print(token + " ");
+        else System.out.print(token.VALUE + " ");
+      }
       System.out.println();
     }
   }
