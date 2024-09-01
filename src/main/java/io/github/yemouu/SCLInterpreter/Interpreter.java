@@ -479,8 +479,7 @@ public class Interpreter {
     String filename = args[0];
     File file = new File(filename);
 
-    Interpreter interpreter = new Interpreter(file, true);
-    // Interpreter interpreter = new Interpreter(file);
+    Interpreter interpreter = new Interpreter(file);
     interpreter.execute();
   }
 }

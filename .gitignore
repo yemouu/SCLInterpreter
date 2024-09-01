@@ -1,2 +1,6 @@
-tokens.txt
+target/
 *.class
+
+.settings
+.project
+.classpath
