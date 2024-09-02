@@ -1,7 +1,7 @@
 # SCL Interpreter
 This is the group project for Kennesaw State University's 'CS 4308 - Concepts of Programming Languages' course.
 For this project we were tasked with writing a lexer, parser, and interpreter for fictional(?) language called SCL.
-Our interpreter didn't need to interpret the entirety of this fictional language, just the sampel file of our [choice](examples/bitops1.scl).
+Our interpreter didn't need to interpret the entirety of this fictional language, just the sample file of our [choice](examples/bitops1.scl).
 
 ## Building and Executing
 If you are using NixOS, you can run `nix build`.
