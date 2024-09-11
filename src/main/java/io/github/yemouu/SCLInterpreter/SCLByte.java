@@ -1,3 +1,5 @@
+package io.github.yemouu.SCLInterpreter;
+
 public class SCLByte extends TypedNumericValue {
   public SCLByte(String value) {
     super(SCLTypes.BYTE, value);

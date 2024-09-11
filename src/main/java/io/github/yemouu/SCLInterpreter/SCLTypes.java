@@ -1,3 +1,5 @@
+package io.github.yemouu.SCLInterpreter;
+
 public enum SCLTypes {
   BYTE,
   INTEGER,

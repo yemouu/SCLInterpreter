@@ -1,3 +1,5 @@
+package io.github.yemouu.SCLInterpreter;
+
 public abstract class TypedNumericValue extends TypedValue {
   public TypedNumericValue(SCLTypes type, String value) {
     super(type, value);

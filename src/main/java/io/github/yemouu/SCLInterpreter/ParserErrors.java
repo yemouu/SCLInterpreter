@@ -1,3 +1,5 @@
+package io.github.yemouu.SCLInterpreter;
+
 class UnexpectedTokenException extends RuntimeException {
   public UnexpectedTokenException(String errorMessage) {
     super(errorMessage);

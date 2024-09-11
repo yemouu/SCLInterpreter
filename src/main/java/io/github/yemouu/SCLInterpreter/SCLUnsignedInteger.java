@@ -1,3 +1,5 @@
+package io.github.yemouu.SCLInterpreter;
+
 public class SCLUnsignedInteger extends TypedNumericValue {
   public SCLUnsignedInteger(String value) {
     super(SCLTypes.UNSIGNED_INTEGER, value);

@@ -43,7 +43,7 @@
           <archive>
             <manifest>
               <addClasspath>true</addClasspath>
-              <mainClass>Interpreter</mainClass>
+              <mainClass>io.github.yemouu.SCLInterpreter.Interpreter</mainClass>
             </manifest>
           </archive>
         </configuration>

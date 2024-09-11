@@ -1,3 +1,5 @@
+package io.github.yemouu.SCLInterpreter;
+
 public abstract class TypedValue {
   public final SCLTypes TYPE;
   public final String VALUE;

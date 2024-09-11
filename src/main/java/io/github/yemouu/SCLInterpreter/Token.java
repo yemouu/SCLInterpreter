@@ -1,3 +1,5 @@
+package io.github.yemouu.SCLInterpreter;
+
 public class Token {
   public final TokenType TYPE;
   public final String VALUE;

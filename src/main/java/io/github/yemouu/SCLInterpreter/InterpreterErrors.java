@@ -1,3 +1,5 @@
+package io.github.yemouu.SCLInterpreter;
+
 class MissingMainException extends RuntimeException {
   public MissingMainException(String errorMessage) {
     super(errorMessage);
